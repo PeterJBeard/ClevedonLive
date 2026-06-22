@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Clevedon Live</title>
+<meta name="description" content="Live cameras, tides, weather and sun times for Clevedon, Somerset." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    /* Light, bright seaside palette */
+    --sky-1:#eaf6ff; --sky-2:#dcefff6; --sand:#fff6e8;
+    --ink:#0d2a3f; --ink-soft:#3f5d72; --ink-faint:#7d96a8;
+    --card:rgba(255,255,255,.72); --card-solid:#ffffff; --line:rgba(13,42,63,.10);
+    --teal:#08a5b5; --teal-deep:#0b7a86; --sea:#2f8fe0; --coral:#ff7a59; --sun:#ffb43d; --green:#1fb15f; --amber:#f2a93b; --red:#e2553f;
+    --shadow:0 14px 40px -18px rgba(13,42,63,.45);
+    --shadow-soft:0 8px 24px -16px rgba(13,42,63,.4);
+    --r:22px; --r-sm:14px;
+    --display:'Outfit',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --body:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:var(--body); color:var(--ink); overflow:hidden;
+    background:
+      radial-gradient(1200px 700px at 82% -8%, rgba(255,180,61,.22), transparent 60%),
+      radial-gradient(1100px 800px at 8% 120%, rgba(8,165,181,.20), transparent 55%),
+      linear-gradient(170deg, var(--sky-1) 0%, var(--sky-2) 48%, var(--sand) 100%);
+    background-attachment:fixed;
+  }
+  /* decorative bottom waves */
+  body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:34vh;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(120% 100% at 50% 100%, rgba(47,143,224,.10), transparent 70%);}
+  .app{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh;padding:clamp(10px,1.3vw,20px);gap:clamp(9px,1vw,15px)}
+
+  /* ---------- Top bar ---------- */
+  .topbar{display:flex;align-items:center;gap:clamp(12px,1.6vw,26px);flex-wrap:nowrap}
+  .brand{display:flex;align-items:center;gap:12px;min-width:0}
+  .mark{width:clamp(38px,3vw,52px);height:clamp(38px,3vw,52px);border-radius:14px;flex:none;
+    background:linear-gradient(150deg,var(--teal),var(--sea));display:grid;place-items:center;box-shadow:var(--shadow-soft)}
+  .mark svg{width:62%;height:62%}
+  .brand h1{font-family:var(--display);font-weight:800;font-size:clamp(20px,2vw,32px);letter-spacing:-.02em;line-height:1}
+  .brand .sub{font-size:clamp(11px,.95vw,14px);color:var(--ink-soft);font-weight:500;margin-top:3px}
+  .clock{text-align:right;font-family:var(--display)}
+  .locsel{display:flex;gap:2px;background:var(--card-solid);border:1px solid var(--line);border-radius:999px;padding:3px;box-shadow:var(--shadow-soft);margin-left:auto}
+  .locsel button{border:0;background:transparent;cursor:pointer;font-family:var(--display);font-weight:700;font-size:clamp(12px,1vw,15px);color:var(--ink-soft);padding:7px 15px;border-radius:999px;transition:.15s}
+  .locsel button:hover{color:var(--teal-deep)}
+  .locsel button.active{background:linear-gradient(150deg,var(--teal),var(--sea));color:#fff}
+  .clock .t{font-weight:700;font-size:clamp(22px,2.4vw,40px);line-height:1;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+  .clock .t .sec{color:var(--teal);font-weight:600;font-size:.62em;margin-left:1px}
+  .clock .d{font-size:clamp(11px,1vw,15px);color:var(--ink-soft);font-weight:500;margin-top:4px}
+
+  .live-pill{display:flex;align-items:center;gap:9px;background:var(--card-solid);border:1px solid var(--line);
+    border-radius:999px;padding:8px 14px 8px 12px;box-shadow:var(--shadow-soft);cursor:default}
+  .dot{width:11px;height:11px;border-radius:50%;background:var(--green);position:relative;flex:none}
+  .dot.live::after{content:"";position:absolute;inset:-5px;border-radius:50%;background:var(--green);opacity:.45;animation:pulse 1.8s ease-out infinite}
+  .dot.stale{background:var(--amber)} .dot.down{background:var(--red)} .dot.stale::after,.dot.down::after{display:none}
+  @keyframes pulse{0%{transform:scale(.6);opacity:.5}100%{transform:scale(2.2);opacity:0}}
+  .live-pill .lab{font-family:var(--display);font-weight:700;font-size:clamp(12px,1vw,15px);letter-spacing:.02em}
+  .live-pill .meta{font-size:clamp(10px,.85vw,12px);color:var(--ink-soft);font-weight:500}
+  .iconbtn{width:clamp(38px,3vw,46px);height:clamp(38px,3vw,46px);border-radius:12px;border:1px solid var(--line);
+    background:var(--card-solid);color:var(--ink-soft);display:grid;place-items:center;cursor:pointer;box-shadow:var(--shadow-soft);transition:.15s}
+  .iconbtn:hover{color:var(--teal-deep);transform:translateY(-1px)}
+  .iconbtn svg{width:20px;height:20px}
+  .iconbtn.spin svg{animation:spin .8s linear}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ---------- Main grid ---------- */
+  .main{flex:1;display:grid;grid-template-columns:1.5fr 1fr;gap:clamp(9px,1vw,15px);min-height:0}
+  .cams{display:flex;flex-direction:column;gap:clamp(9px,1vw,15px);min-height:0}
+  .stage{position:relative;flex:1;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);background:#0b2233;min-height:0;--pipw:clamp(78px,8vw,120px)}
+  .stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
+  .stage .veil{position:absolute;inset:0;display:grid;place-items:center;background:linear-gradient(180deg,#0b2233,#0e3147);color:#cfe8f2;font-family:var(--display);z-index:1;gap:10px;text-align:center;padding:20px;transition:opacity .4s}
+  .stage .veil.hide{opacity:0;pointer-events:none}
+  .stage .veil .spin2{width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,255,255,.25);border-top-color:#fff;animation:spin 1s linear infinite}
+  .cap{position:absolute;top:12px;left:12px;z-index:2;display:flex;align-items:center;gap:8px;
+    background:rgba(8,40,58,.62);backdrop-filter:blur(8px);color:#fff;border-radius:999px;padding:6px 13px;font-family:var(--display);font-weight:600;font-size:clamp(11px,1vw,14px);box-shadow:0 6px 18px -10px rgba(0,0,0,.6)}
+  .cap .ldot{width:8px;height:8px;border-radius:50%;background:#ff4f4f;box-shadow:0 0 0 0 rgba(255,79,79,.6);animation:rec 1.6s infinite}
+  @keyframes rec{0%{box-shadow:0 0 0 0 rgba(255,79,79,.55)}70%{box-shadow:0 0 0 7px rgba(255,79,79,0)}100%{box-shadow:0 0 0 0 rgba(255,79,79,0)}}
+  #heroImg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;background:#0b2233}
+  .openlive{position:absolute;right:12px;top:12px;z-index:4;text-decoration:none;border-radius:10px;padding:7px 12px;
+    background:rgba(8,40,58,.66);color:#fff;backdrop-filter:blur(8px);font-family:var(--display);font-weight:600;font-size:12px;
+    display:flex;align-items:center;gap:6px;box-shadow:0 6px 18px -10px rgba(0,0,0,.6)}
+  .openlive:hover{background:rgba(8,40,58,.88)}
+  /* camera tiles: one hero + two side-by-side PiPs */
+  .camtile{position:absolute;overflow:hidden;background:#0b2233}
+  .camtile iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
+  .camtile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .camtile.hero{top:0;left:0;width:100%;height:100%;border-radius:var(--r);z-index:1}
+  .camtile.pip{width:var(--pipw);aspect-ratio:16/9;bottom:14px;z-index:3;border:2px solid rgba(255,255,255,.9);border-radius:13px;cursor:pointer;box-shadow:0 12px 30px -12px rgba(0,0,0,.65);transition:transform .15s,border-color .15s}
+  .camtile.pip:hover{border-color:var(--teal);transform:translateY(-2px)}
+  .camtile.pip.p0{right:14px}
+  .camtile.pip.p1{right:calc(14px + var(--pipw) + 12px)}
+  .camtile .ccap{position:absolute;left:0;top:0;z-index:2;display:flex;align-items:center;gap:7px;color:#fff;background:rgba(8,40,58,.6);backdrop-filter:blur(8px);border-radius:0 0 12px 0;padding:6px 12px;font-family:var(--display);font-weight:600;font-size:clamp(11px,1vw,14px);line-height:1}
+  .camtile.pip .ccap{padding:4px 8px;font-size:10px;border-radius:0 0 9px 0;gap:5px}
+  .camtile .ccap .ld{width:8px;height:8px;border-radius:50%;background:#ff4f4f;box-shadow:0 0 0 0 rgba(255,79,79,.6);animation:rec 1.6s infinite;flex:none}
+  .cyc{position:absolute;left:14px;bottom:14px;z-index:4;border:1px solid rgba(255,255,255,.45);background:rgba(8,40,58,.6);backdrop-filter:blur(8px);color:#fff;border-radius:10px;padding:7px 12px;font-family:var(--display);font-weight:600;font-size:12px;cursor:pointer}
+  .cyc:hover{background:rgba(8,40,58,.82)}
+  .cyc.on{background:var(--teal);border-color:var(--teal);color:#04303a}
+  .camtile .hit{position:absolute;inset:0;z-index:5;border:0;background:transparent;cursor:pointer;display:none;padding:0}
+  .camtile.pip .hit{display:block}              /* PiPs: tap swaps to main */
+  .camtile.hero .hit{display:none}              /* main view: player stays interactive */
+  .camtile .watch{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:6;display:none;align-items:center;gap:10px;text-decoration:none;
+    background:rgba(8,40,58,.74);backdrop-filter:blur(8px);color:#fff;border-radius:999px;padding:10px 18px;font-family:var(--display);font-weight:600;font-size:14px;box-shadow:0 10px 26px -10px rgba(0,0,0,.7)}
+  .camtile.hero.still .watch{display:flex}      /* only on the main view when it is the lake still */
+  .camtile .watch:hover{background:rgba(8,40,58,.92)}
+  .camtile .watch .pbtn{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#ff3b30;font-size:9px;padding-left:2px}
+  .camtile.noimg{background:linear-gradient(150deg,#10506f,#0b2233)}
+  .camtile .stillnote{position:absolute;left:50%;bottom:60px;transform:translateX(-50%);z-index:6;display:none;white-space:nowrap;background:rgba(8,40,58,.6);backdrop-filter:blur(8px);color:#eaf6ff;font-family:var(--body);font-size:12px;font-weight:500;padding:5px 12px;border-radius:999px}
+  .camtile.hero.still .stillnote{display:block}
+  .heroplay{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:4;display:none;align-items:center;gap:10px;text-decoration:none;
+    background:rgba(8,40,58,.74);backdrop-filter:blur(8px);color:#fff;border-radius:999px;padding:10px 18px;font-family:var(--display);font-weight:600;font-size:14px;box-shadow:0 10px 26px -10px rgba(0,0,0,.7)}
+  .heroplay:hover{background:rgba(8,40,58,.92);transform:translateX(-50%) translateY(-1px)}
+  .heroplay.show{display:flex}
+  .heroplay .pbtn{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#ff3b30;font-size:9px;padding-left:2px}
+  /* camera selector strip */
+  .thumbs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:clamp(6px,.7vw,11px);height:clamp(62px,8.4vh,104px);flex:none}
+  .thumb{position:relative;border-radius:14px;overflow:hidden;cursor:pointer;border:2px solid transparent;background:#0b2233;box-shadow:var(--shadow-soft);transition:.18s;min-width:0}
+  .thumb:hover{transform:translateY(-2px)}
+  .thumb.active{border-color:var(--teal)}
+  .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .thumb .ph{position:absolute;inset:0;display:grid;place-items:center;background:linear-gradient(150deg,#10506f,#0b2233);color:#bfe3ee}
+  .thumb .ph svg{width:30px;height:30px;opacity:.92}
+  .thumb .tl{position:absolute;left:0;right:0;bottom:0;padding:6px 8px 5px;font-family:var(--display);font-weight:600;font-size:clamp(9px,.82vw,12px);color:#fff;
+    background:linear-gradient(0deg,rgba(5,25,38,.9),rgba(5,25,38,0));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .thumb .ld{position:absolute;top:6px;left:6px;width:7px;height:7px;border-radius:50%;background:#9fb6c4;z-index:1}
+  .thumb.active .ld{background:#19d36a;box-shadow:0 0 0 3px rgba(25,211,106,.25)}
+
+  /* ---------- Right rail cards ---------- */
+  .rail{display:grid;grid-template-rows:auto auto auto;gap:clamp(9px,1vw,15px);min-height:0}
+  .card{background:var(--card);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:var(--r);
+    padding:clamp(12px,1.1vw,18px);box-shadow:var(--shadow-soft);min-height:0;display:flex;flex-direction:column}
+  .card-h{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+  .card-h .ci{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;color:#fff;flex:none}
+  .card-h .ci svg{width:15px;height:15px}
+  .card-h h2{font-family:var(--display);font-weight:700;font-size:clamp(13px,1.05vw,16px);letter-spacing:.01em}
+  .card-h .upd{margin-left:auto;font-size:clamp(9px,.78vw,11px);color:var(--ink-faint);font-weight:500;white-space:nowrap}
+  .c-weather .ci{background:linear-gradient(150deg,var(--sun),var(--coral))}
+  .c-tide .ci{background:linear-gradient(150deg,var(--sea),var(--teal))}
+  .c-sun .ci{background:linear-gradient(150deg,#ffcf5c,var(--sun))}
+
+  /* weather card */
+  .wx-now{display:flex;align-items:center;gap:clamp(10px,1.2vw,18px)}
+  .wx-ico{width:clamp(58px,5.2vw,86px);height:clamp(58px,5.2vw,86px);flex:none;color:var(--sun)}
+  .wx-temp{font-family:var(--display);font-weight:800;font-size:clamp(40px,4.6vw,76px);line-height:.92;letter-spacing:-.03em}
+  .wx-temp sup{font-size:.42em;font-weight:600;top:-.5em;color:var(--ink-soft)}
+  .wx-side{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .wx-cond{font-family:var(--display);font-weight:600;font-size:clamp(14px,1.2vw,19px);color:var(--ink)}
+  .wx-feels{font-size:clamp(11px,.95vw,13px);color:var(--ink-soft)}
+  .wx-stats{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .chip{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.7);border:1px solid var(--line);border-radius:12px;padding:7px 11px;font-size:clamp(11px,.92vw,13px);font-weight:500}
+  .chip b{font-family:var(--display);font-weight:700;color:var(--ink)}
+  .chip svg{width:15px;height:15px;color:var(--teal-deep);flex:none}
+  .chip .windico{transition:transform .4s}
+
+  /* tide card */
+  .tide-top{display:flex;align-items:flex-end;gap:14px;justify-content:space-between}
+  .tide-state{font-family:var(--display);font-weight:800;font-size:clamp(22px,2.3vw,38px);line-height:1;display:flex;align-items:center;gap:10px}
+  .tide-state .arrow{font-size:.7em}
+  .tide-state.rising{color:var(--sea)} .tide-state.falling{color:var(--teal-deep)}
+  .tide-now{text-align:right}
+  .tide-now .lv{font-family:var(--display);font-weight:700;font-size:clamp(16px,1.5vw,24px);font-variant-numeric:tabular-nums}
+  .tide-now .lb{font-size:clamp(9px,.8vw,11px);color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em}
+  .tide-curve{margin:8px 0 6px;width:100%}
+  .tide-curve svg{width:100%;height:clamp(64px,7vh,104px);display:block;overflow:visible}
+  .nextrow{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:auto}
+  .nt{background:rgba(255,255,255,.7);border:1px solid var(--line);border-radius:13px;padding:9px 12px}
+  .nt .k{font-size:clamp(10px,.82vw,12px);color:var(--ink-soft);font-weight:600;display:flex;align-items:center;gap:6px}
+  .nt .k svg{width:13px;height:13px}
+  .nt .v{font-family:var(--display);font-weight:800;font-size:clamp(17px,1.6vw,26px);line-height:1.05;font-variant-numeric:tabular-nums}
+  .nt .s{font-size:clamp(10px,.85vw,12px);color:var(--ink-soft);font-variant-numeric:tabular-nums}
+  .nt.high .v{color:var(--sea)} .nt.low .v{color:var(--teal-deep)}
+  .tide-foot{display:flex;align-items:center;gap:8px;margin-top:9px;flex-wrap:wrap}
+  .tag{font-size:clamp(10px,.82vw,12px);font-weight:600;border-radius:999px;padding:4px 10px;border:1px solid var(--line);background:rgba(255,255,255,.65);color:var(--ink-soft)}
+  .tag.spring{background:rgba(47,143,224,.14);color:#1d5fa0;border-color:rgba(47,143,224,.3)}
+  .tag.neap{background:rgba(8,165,181,.14);color:var(--teal-deep);border-color:rgba(8,165,181,.3)}
+  .warn{display:none;align-items:center;gap:8px;margin-top:9px;background:rgba(242,169,59,.16);border:1px solid rgba(242,169,59,.4);
+    color:#9a6512;border-radius:12px;padding:8px 11px;font-size:clamp(10px,.88vw,13px);font-weight:600}
+  .warn.show{display:flex}
+  .warn svg{width:16px;height:16px;flex:none}
+  .warn a{color:#7a4e0a;font-weight:700}
+
+  /* sun card */
+  .sun-wrap{display:flex;align-items:center;gap:clamp(10px,1.4vw,20px)}
+  .sun-arc{flex:none;width:clamp(120px,12vw,190px)}
+  .sun-arc svg{width:100%;height:auto;display:block;overflow:visible}
+  .sun-info{display:flex;flex-direction:column;gap:9px;flex:1;min-width:0}
+  .sun-count .k{font-size:clamp(10px,.85vw,12px);color:var(--ink-soft);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+  .sun-count .v{font-family:var(--display);font-weight:800;font-size:clamp(20px,2vw,32px);line-height:1;color:var(--coral);font-variant-numeric:tabular-nums}
+  .sun-times{display:flex;gap:10px}
+  .sun-times .st{flex:1;background:rgba(255,255,255,.7);border:1px solid var(--line);border-radius:12px;padding:8px 11px}
+  .sun-times .st .k{font-size:clamp(10px,.82vw,12px);color:var(--ink-soft);font-weight:600;display:flex;align-items:center;gap:6px}
+  .sun-times .st .k svg{width:14px;height:14px;color:var(--sun)}
+  .sun-times .st .v{font-family:var(--display);font-weight:700;font-size:clamp(15px,1.4vw,22px);font-variant-numeric:tabular-nums}
+  .water-row{display:flex;align-items:center;gap:10px;margin-top:11px;padding-top:11px;border-top:1px dashed var(--line)}
+  .water-row .wi{width:30px;height:30px;border-radius:9px;background:linear-gradient(150deg,#34c6d6,#2f8fe0);display:grid;place-items:center;color:#fff;flex:none}
+  .water-row .wi svg{width:17px;height:17px}
+  .water-vals{display:flex;gap:16px;flex-wrap:wrap}
+  .water-vals .wv .v{font-family:var(--display);font-weight:800;font-size:clamp(16px,1.5vw,24px);line-height:1;font-variant-numeric:tabular-nums}
+  .water-vals .wv .k{font-size:clamp(9px,.78vw,11px);color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em}
+  .water-note{margin-left:auto;text-align:right;font-size:clamp(9px,.78vw,11px);color:var(--ink-faint);max-width:42%}
+
+  /* ---------- Bottom strips ---------- */
+  .strips{display:grid;grid-template-columns:1.5fr 1fr;gap:clamp(9px,1vw,15px)}
+  .strip{background:var(--card);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:var(--r);padding:clamp(10px,.9vw,15px) clamp(12px,1vw,17px);box-shadow:var(--shadow-soft)}
+  .strip h3{font-family:var(--display);font-weight:700;font-size:clamp(11px,.92vw,13px);color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em;margin-bottom:9px;display:flex;align-items:center;gap:7px}
+  .strip h3 svg{width:14px;height:14px;color:var(--teal-deep)}
+  .hours{display:flex;justify-content:space-between;gap:4px}
+  .hr{flex:1;text-align:center;border-radius:13px;padding:9px 4px;transition:.2s}
+  .hr.now{background:rgba(47,143,224,.12);border:1px solid rgba(47,143,224,.28)}
+  .hr .ht{font-size:clamp(10px,.82vw,12px);color:var(--ink-soft);font-weight:600;font-variant-numeric:tabular-nums}
+  .hr .hi{width:clamp(24px,2.2vw,32px);height:clamp(24px,2.2vw,32px);margin:5px auto;color:var(--sun)}
+  .hr .htemp{font-family:var(--display);font-weight:700;font-size:clamp(13px,1.15vw,18px);font-variant-numeric:tabular-nums}
+  .hr .hpop{font-size:clamp(9px,.78vw,11px);color:var(--sea);font-weight:600;min-height:1em}
+  .days{display:flex;justify-content:space-between;gap:4px}
+  .dy{flex:1;text-align:center;border-radius:13px;padding:9px 4px}
+  .dy.today{background:rgba(255,180,61,.16);border:1px solid rgba(255,180,61,.34)}
+  .dy .dn{font-size:clamp(10px,.85vw,12px);color:var(--ink-soft);font-weight:700}
+  .dy .di{width:clamp(24px,2.2vw,32px);height:clamp(24px,2.2vw,32px);margin:5px auto;color:var(--sun)}
+  .dy .dmax{font-family:var(--display);font-weight:700;font-size:clamp(12px,1.05vw,16px);font-variant-numeric:tabular-nums}
+  .dy .dmin{font-size:clamp(10px,.85vw,12px);color:var(--ink-faint);font-variant-numeric:tabular-nums}
+  .dy .drain{font-size:clamp(9px,.78vw,11px);color:var(--sea);font-weight:700;font-variant-numeric:tabular-nums;min-height:1em}
+
+  .footer{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:clamp(9px,.8vw,11.5px);color:var(--ink-faint);padding:0 4px}
+  .footer a{color:var(--ink-soft);text-decoration:none;font-weight:600}
+  .footer a:hover{color:var(--teal-deep);text-decoration:underline}
+  .footer .sep{opacity:.4}
+
+  /* responsive: stack on narrow screens / portrait */
+  @media (max-aspect-ratio:1/1), (max-width:900px){
+    body{overflow:auto}
+    .app{height:auto;min-height:100vh}
+    .main{grid-template-columns:1fr}
+    .strips{grid-template-columns:1fr}
+    .stage{min-height:46vw}
+    .hours{overflow-x:auto}
+  }
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="mark">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M2 17c2 0 2-1.6 4-1.6S8 17 10 17s2-1.6 4-1.6S16 17 18 17s2-1.6 4-1.6" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M2 21c2 0 2-1.6 4-1.6S8 21 10 21s2-1.6 4-1.6S16 21 18 21s2-1.6 4-1.6" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".6"/><circle cx="18" cy="6.5" r="3.2" fill="#fff"/></svg>
+      </div>
+      <div>
+        <h1 id="brandH1">Clevedon Live</h1>
+        <div class="sub" id="brandSub">The Bay &amp; Marine Lake &middot; Somerset</div>
+      </div>
+    </div>
+
+    <div class="locsel" id="locSel">
+      <button data-loc="clevedon" class="active">Clevedon</button>
+      <button data-loc="orford">Orford</button>
+    </div>
+    <div class="live-pill" id="livePill" title="Liveness reflects the time since data last refreshed successfully">
+      <span class="dot live" id="liveDot"></span>
+      <span>
+        <span class="lab" id="liveLab">LIVE</span>
+        <span class="meta" id="liveMeta">starting…</span>
+      </span>
+    </div>
+    <button class="iconbtn" id="refreshBtn" title="Refresh all data now" aria-label="Refresh">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 4v5h-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="iconbtn" id="fsBtn" title="Full screen" aria-label="Full screen">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+
+    <div class="clock">
+      <div class="t" id="clockT">--:--</div>
+      <div class="d" id="clockD">&nbsp;</div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- CAMERAS -->
+    <div class="cams">
+      <div class="stage" id="stage">
+        <button class="cyc" id="cycBtn" title="Auto-cycle the main camera every 25 seconds">Auto-cycle: off</button>
+        <a class="openlive" id="openLive" href="#" target="_blank" rel="noopener" title="Open this camera's own page">Open ↗</a>
+        <!-- camera tiles (hero + two PiPs) are injected here by script -->
+      </div>
+    </div>
+
+    <!-- RIGHT RAIL -->
+    <div class="rail">
+      <!-- WEATHER -->
+      <div class="card c-weather">
+        <div class="card-h">
+          <span class="ci"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" fill="currentColor"/></svg></span>
+          <h2>Weather now</h2>
+          <span class="upd" id="wxUpd">—</span>
+        </div>
+        <div class="wx-now">
+          <div class="wx-ico" id="wxIco"></div>
+          <div class="wx-temp" id="wxTemp">--<sup>°</sup></div>
+          <div class="wx-side">
+            <div class="wx-cond" id="wxCond">—</div>
+            <div class="wx-feels" id="wxFeels">&nbsp;</div>
+          </div>
+        </div>
+        <div class="wx-stats" id="wxStats"></div>
+      </div>
+
+      <!-- TIDE -->
+      <div class="card c-tide">
+        <div class="card-h">
+          <span class="ci"><svg viewBox="0 0 24 24" fill="none"><path d="M3 14c1.8 0 1.8-1.5 3.6-1.5S8.4 14 10.2 14s1.8-1.5 3.6-1.5S15.6 14 17.4 14 19.2 12.5 21 12.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3 19c1.8 0 1.8-1.5 3.6-1.5S8.4 19 10.2 19s1.8-1.5 3.6-1.5S15.6 19 17.4 19 19.2 17.5 21 17.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".55"/></svg></span>
+          <h2>Tide</h2>
+          <span class="upd" id="tideUpd">—</span>
+        </div>
+        <div class="tide-top">
+          <div class="tide-state" id="tideState">—</div>
+          <div class="tide-now"><div class="lv" id="tideLevel">—</div><div class="lb">height now</div></div>
+        </div>
+        <div class="tide-curve" id="tideCurve"></div>
+        <div class="nextrow">
+          <div class="nt high" id="ntHigh">
+            <div class="k"><svg viewBox="0 0 24 24" fill="none"><path d="M12 19V5m0 0-6 6m6-6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Next high</div>
+            <div class="v" id="hiTime">--:--</div><div class="s" id="hiInfo">&nbsp;</div>
+          </div>
+          <div class="nt low" id="ntLow">
+            <div class="k"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14m0 0 6-6m-6 6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Next low</div>
+            <div class="v" id="loTime">--:--</div><div class="s" id="loInfo">&nbsp;</div>
+          </div>
+        </div>
+        <div class="tide-foot" id="tideFoot"></div>
+        <div class="warn" id="tideWarn">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 9v4m0 4h.01M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span id="tideWarnTxt"></span>
+        </div>
+      </div>
+
+      <!-- SUN + WATER -->
+      <div class="card c-sun">
+        <div class="card-h">
+          <span class="ci"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" fill="currentColor"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+          <h2>Sun &amp; water</h2>
+          <span class="upd" id="sunUpd">—</span>
+        </div>
+        <div class="sun-wrap">
+          <div class="sun-arc" id="sunArc"></div>
+          <div class="sun-info">
+            <div class="sun-count"><div class="k" id="sunNextK">Next</div><div class="v" id="sunNextV">--:--</div></div>
+            <div class="sun-times">
+              <div class="st"><div class="k"><svg viewBox="0 0 24 24" fill="none"><path d="M12 18a4 4 0 0 0-8 0M12 2v6m0 0 3-3m-3 3L9 5M2 18h20M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Sunrise</div><div class="v" id="sunriseV">--:--</div></div>
+              <div class="st"><div class="k"><svg viewBox="0 0 24 24" fill="none"><path d="M12 18a4 4 0 0 0-8 0M12 10V4m0 6 3-3m-3 3L9 7M2 18h20M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Sunset</div><div class="v" id="sunsetV">--:--</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="water-row">
+          <div class="wi"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2s7 8 7 13a7 7 0 0 1-14 0c0-5 7-13 7-13Z" fill="currentColor"/></svg></div>
+          <div class="water-vals">
+            <div class="wv"><div class="v" id="seaTemp">—</div><div class="k">Sea temp</div></div>
+            <div class="wv"><div class="v" id="uvVal">—</div><div class="k">UV max today</div></div>
+          </div>
+          <div class="water-note" id="waterNote">Severn Estuary surface temperature</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM STRIPS -->
+  <div class="strips">
+    <div class="strip">
+      <h3><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Next 12 hours</h3>
+      <div class="hours" id="hours"></div>
+    </div>
+    <div class="strip">
+      <h3><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" stroke-width="2"/><path d="M3 9h18M8 2v4M16 2v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>7-day outlook</h3>
+      <div class="days" id="days"></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span id="ftLoc">Clevedon · 51.44°N, 2.86°W</span><span class="sep">|</span>
+    <span>Weather &amp; sun: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a></span><span class="sep">|</span>
+    <span>Live tide gauge: <a href="https://environment.data.gov.uk/flood-monitoring" target="_blank" rel="noopener">EA <span id="ftGauge">Avonmouth</span></a></span><span class="sep">|</span>
+    <span id="ftOvertop">Official overtopping forecast: <a href="https://clevedonmarinelake.org.uk/visit-us/#tides" target="_blank" rel="noopener">Marine Lake tides</a> <span class="sep">|</span></span>
+    <span style="color:var(--amber)">Tide predictions are indicative — not for navigation.</span>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   Clevedon Live — single-page dashboard
+   Data sources (all keyless, CORS-friendly):
+   - Open-Meteo forecast  : weather, hourly, daily, sunrise/sunset, UV
+   - Open-Meteo marine    : sea-surface temperature
+   - Environment Agency   : live tide-gauge level at Avonmouth (E72639)
+   Tide highs/lows are predicted by fitting a harmonic model to the
+   live gauge series on every refresh — so the predictions track the
+   real, currently-measured tide. Times are reliable; heights are
+   approximate (chart datum) and must not be used for navigation.
+   ============================================================ */
+const CFG = {
+  tz: 'Europe/London',
+  refreshWeatherMs: 10*60*1000,
+  refreshTideMs: 5*60*1000,
+  refreshMarineMs: 30*60*1000,
+  camReloadMs: 30*60*1000,
+  dayReloadMs: 6*60*60*1000                       // reload whole page periodically on an always-on TV
+};
+// Two switchable locations. Each carries its own cameras, tide gauge, datum, coords and labels.
+const LOCATIONS = {
+  clevedon:{
+    name:'Clevedon', subtitle:'The Bay &amp; Marine Lake', region:'Somerset', coordLabel:'51.44°N, 2.86°W',
+    lat:51.4407, lon:-2.8607, marinePts:[[51.452,-2.95],[51.50,-3.05],[51.42,-3.02],[51.55,-3.22]],
+    seaLabel:'Severn Estuary surface temperature',
+    eaMeasure:'E72639-level-tidal_level-Mean-15_min-mAOD', datumOffset:6.5, overtop:12.6, gauge:'Avonmouth',
+    cams:[
+      {key:'bay',  cap:'The Bay & Pier',       type:'iframe', url:'https://g0.ipcamlive.com/player/player.php?alias=5c6d2c1f6093aa&autoplay=1&mute=1', open:'https://www.clevedonsailingclub.com/'},
+      {key:'lake', cap:'Marine Lake',          type:'img', still:true, url:'https://i.ytimg.com/vi/pHDSKj1zppA/maxresdefault_live.jpg', fallbacks:['https://i.ytimg.com/vi/pHDSKj1zppA/hqdefault_live.jpg','https://i.ytimg.com/vi/pHDSKj1zppA/hqdefault.jpg','https://i.ytimg.com/vi/pHDSKj1zppA/sddefault.jpg'], liveUrl:'https://www.youtube.com/embed/live_stream?channel=UC39cxeCVCkgczgG4zpiMPjA&autoplay=1&mute=1&playsinline=1&modestbranding=1&rel=0', open:'https://www.youtube.com/@clevedonmarinelakewebcam4369/live'},
+      {key:'pier', cap:'Pier · Porthole Room', type:'iframe', url:'https://g0.ipcamlive.com/player/player.php?alias=portholecamera&autoplay=1&mute=1', open:'https://clevedonpier.co.uk/porthole-room-camera/'}
+    ]
+  },
+  orford:{
+    name:'Orford', subtitle:'The Quay &amp; River Ore', region:'Suffolk', coordLabel:'52.09°N, 1.53°E',
+    lat:52.0925, lon:1.5347, marinePts:[[52.05,1.62],[52.02,1.58],[52.10,1.72]],
+    seaLabel:'North Sea surface temperature (off Orford Ness)',
+    eaMeasure:'E71439-level-tidal_level-Mean-15_min-mAOD', datumOffset:2.0, overtop:null, gauge:'Harwich (nearest)',
+    cams:[
+      {key:'or1', cap:'Orford · Camera 1', type:'iframe', url:'https://g0.ipcamlive.com/player/player.php?alias=60114dfa9f44f&autoplay=1&mute=1', open:'https://g0.ipcamlive.com/player/player.php?alias=60114dfa9f44f&autoplay=1'},
+      {key:'or2', cap:'Orford · Camera 2', type:'iframe', url:'https://g0.ipcamlive.com/player/player.php?alias=64f73bc8d6747&autoplay=1&mute=1', open:'https://g0.ipcamlive.com/player/player.php?alias=64f73bc8d6747&autoplay=1'}
+    ]
+  }
+};
+let locKey='clevedon';
+const L=()=>LOCATIONS[locKey];
+// The Marine Lake's YouTube embed works on a real web address but shows "Error 153" when the page
+// is opened as a local file (null origin). So serve the live video when hosted (http/https), and
+// the near-live photo when run from a local file. Hosting the app therefore unlocks moving video.
+const ONFILE = (location.protocol==='file:');
+function resolveCam(c){
+  if(c.key==='lake' && c.liveUrl && !ONFILE) return Object.assign({},c,{type:'iframe', still:false, url:c.liveUrl});
+  return c;
+}
+
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2,'0');
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+
+/* ---- liveness tracking ---- */
+const state = { lastOK:{weather:0,tide:0,marine:0}, anyData:false };
+function nowMs(){return Date.now();}
+function relWords(ms){
+  if(!ms) return 'never';
+  const s=Math.round((nowMs()-ms)/1000);
+  if(s<5)return'just now'; if(s<60)return s+'s ago';
+  const m=Math.round(s/60); if(m<60)return m+'m ago';
+  const h=Math.round(m/60); return h+'h ago';
+}
+
+/* =========================================================
+   CAMERAS
+   ========================================================= */
+// All Clevedon views. type: 'ipcam'/'iframe' (video) or 'img' (auto-refreshing picture)
+let heroKey='bay';
+let cycle=false, cycTimer=null;
+const CAMICON='<svg viewBox="0 0 24 24" fill="none"><rect x="2" y="7" width="14" height="11" rx="2.5" fill="currentColor"/><path d="M22 9.5 16.5 12.5 22 15.5V9.5Z" fill="currentColor"/></svg>';
+const IMGICON='<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2.5" fill="currentColor"/><circle cx="8.5" cy="9.5" r="1.6" fill="#0b2233"/><path d="M5 18l4.5-5 3 3.2L16 12l3 4" stroke="#0b2233" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const bust=u=>u+(u.includes('?')?'&':'?')+'t='+Date.now();
+function buildTiles(){
+  const stage=$('stage');
+  Array.from(stage.querySelectorAll('.camtile')).forEach(t=>t.remove());
+  L().cams.forEach(rawC=>{
+    const c=resolveCam(rawC);
+    const t=document.createElement('div');
+    t.className='camtile'+(c.still?' still':''); t.dataset.key=c.key;
+    const media = c.type==='img'
+      ? `<img alt="${c.cap}" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover" src="${bust(c.url)}">`
+      : `<iframe allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" src="${c.url}"></iframe>`;
+    const watch = c.still ? `<div class="stillnote">Live image &middot; tap &ldquo;Watch live&rdquo; for full video</div><a class="watch" href="${c.open}" target="_blank" rel="noopener"><span class="pbtn">&#9658;</span>Watch live on YouTube</a>` : '';
+    // a transparent click-catcher sits over PiP tiles so a tap swaps the view instead of
+    // landing inside the video player; it is hidden on the hero so the player stays interactive
+    t.innerHTML=`<div class="ccap"><span class="ld"></span><span class="nm">${c.cap}</span></div>${media}${watch}<button class="hit" aria-label="Show ${c.cap} on the main view"></button>`;
+    if(c.type==='img'){ const im=t.querySelector('img'), fb=(c.fallbacks||[]).slice();
+      im.onerror=function(){ if(fb.length){ this.src=fb.shift()+'?t='+Date.now(); } else { this.style.display='none'; t.classList.add('noimg'); } }; }
+    t.querySelector('.hit').addEventListener('click',()=>setHero(c.key));
+    stage.appendChild(t);
+  });
+  layout();
+}
+function layout(){
+  const others=L().cams.map(c=>c.key).filter(k=>k!==heroKey);
+  document.querySelectorAll('.camtile').forEach(t=>{
+    const k=t.dataset.key;
+    t.classList.remove('hero','pip','p0','p1');
+    if(k===heroKey) t.classList.add('hero');
+    else t.classList.add('pip','p'+others.indexOf(k));
+  });
+  const hero=L().cams.find(c=>c.key===heroKey)||L().cams[0];
+  $('openLive').href=hero.open||hero.url;
+  try{ localStorage.setItem('clv_hero',heroKey); }catch(e){}
+}
+function setHero(k){ heroKey=k; layout(); }
+function nextCam(){ const o=L().cams.map(c=>c.key); setHero(o[(o.indexOf(heroKey)+1)%o.length]); }
+function scheduleCycle(){ const d=7000+Math.random()*3000; cycTimer=setTimeout(()=>{ nextCam(); scheduleCycle(); }, d); } // random 7–10s
+function startCycle(){ cycle=true; const b=$('cycBtn'); b.classList.add('on'); b.textContent='Auto-cycle: on';
+  clearTimeout(cycTimer); scheduleCycle();
+  try{ localStorage.setItem('clv_cycle','1'); }catch(e){} }
+function stopCycle(){ cycle=false; const b=$('cycBtn'); b.classList.remove('on'); b.textContent='Auto-cycle: off';
+  clearTimeout(cycTimer); try{ localStorage.setItem('clv_cycle','0'); }catch(e){} }
+$('cycBtn').onclick=()=>{ cycle?stopCycle():startCycle(); };
+function applyLocationChrome(){
+  const l=L();
+  $('brandH1').textContent=l.name+' Live';
+  $('brandSub').innerHTML=l.subtitle+' &middot; '+l.region;
+  $('ftLoc').textContent=l.name+' · '+l.coordLabel;
+  $('ftGauge').textContent=l.gauge;
+  $('waterNote').textContent=l.seaLabel;
+  $('ftOvertop').style.display = l.overtop ? '' : 'none';
+  document.title=l.name+' Live';
+}
+function setLocation(k){ if(!LOCATIONS[k]||k===locKey) return; locKey=k; heroKey=L().cams[0].key;
+  document.querySelectorAll('.locsel button').forEach(b=>b.classList.toggle('active',b.dataset.loc===k));
+  applyLocationChrome(); buildTiles(); refreshAll(true);
+  try{ localStorage.setItem('clv_loc',k); }catch(e){}
+}
+document.querySelectorAll('.locsel button').forEach(b=>b.onclick=()=>setLocation(b.dataset.loc));
+function refreshStillTiles(){ // refresh picture-type cameras in place (keeps whichever URL is working)
+  document.querySelectorAll('.camtile.still img').forEach(im=>{ if(im.style.display==='none')return; const base=(im.src||'').split('?')[0]; if(base) im.src=base+'?t='+Date.now(); });
+}
+function reloadCams(){ // periodically refresh streams so a frozen one recovers on a 24/7 display
+  document.querySelectorAll('.camtile iframe').forEach(f=>{ const s=f.src; f.src='about:blank'; setTimeout(()=>{ f.src=s; },300); });
+}
+
+/* =========================================================
+   WEATHER ICONS  (WMO weather codes -> inline SVG)
+   ========================================================= */
+function wxLabel(c){
+  const m={0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',45:'Fog',48:'Rime fog',
+    51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',56:'Freezing drizzle',57:'Freezing drizzle',
+    61:'Light rain',63:'Rain',65:'Heavy rain',66:'Freezing rain',67:'Freezing rain',
+    71:'Light snow',73:'Snow',75:'Heavy snow',77:'Snow grains',
+    80:'Light showers',81:'Showers',82:'Heavy showers',85:'Snow showers',86:'Snow showers',
+    95:'Thunderstorm',96:'Thunderstorm',99:'Thunderstorm'};
+  return m[c]||'—';
+}
+function wxIcon(c,day){
+  const sun='<circle cx="12" cy="12" r="5" fill="#ffb43d"/><g stroke="#ffb43d" stroke-width="2" stroke-linecap="round"><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.5 4.5l2 2M17.5 17.5l2 2M19.5 4.5l-2 2M6.5 17.5l-2 2"/></g>';
+  const moon='<path d="M20 14.5A8 8 0 0 1 9.5 4 7 7 0 1 0 20 14.5Z" fill="#f6c659"/>';
+  const cloud=(col='#9bb8cc')=>`<path d="M7 18a4.5 4.5 0 0 1-.5-8.97A6 6 0 0 1 18 9.5 4 4 0 0 1 17.5 18H7Z" fill="${col}"/>`;
+  const rain='<g stroke="#3f9be0" stroke-width="2" stroke-linecap="round"><path d="M8 19l-1 2.5M12 19l-1 2.5M16 19l-1 2.5"/></g>';
+  const heavyrain='<g stroke="#2f8fe0" stroke-width="2" stroke-linecap="round"><path d="M7 19l-1.5 3M11 19l-1.5 3M15 19l-1.5 3M19 19l-1.5 3"/></g>';
+  const snow='<g stroke="#7fc8e6" stroke-width="2" stroke-linecap="round"><path d="M8 20h.01M12 21h.01M16 20h.01M10 22h.01M14 22h.01"/></g>';
+  const bolt='<path d="M12 18l-2 4h3l-1.5 3.5L15 19h-3l1-1z" fill="#f2a93b"/>';
+  let s='';
+  if(c===0||c===1) s = day?sun:moon;              // 0 clear, 1 mainly clear -> sunny
+  else if(c===2){ s = (day?'<circle cx="9" cy="9" r="4" fill="#ffb43d"/><g stroke="#ffb43d" stroke-width="1.7" stroke-linecap="round"><path d="M9 2v2M2 9h2M3.5 3.5l1.4 1.4M14.5 3.5l-1.4 1.4"/></g>':'<path d="M14 9.5A5 5 0 0 1 7.5 3 5 5 0 1 0 14 9.5Z" fill="#f6c659"/>') + cloud('#acc6d8'); }  // partly cloudy
+  else if(c===3) s = cloud('#9bb8cc');             // overcast
+  else if(c===45||c===48) s = cloud('#b4c6d2')+'<g stroke="#8aa6b8" stroke-width="2" stroke-linecap="round"><path d="M6 20h12M7 22.5h10"/></g>';
+  else if(c>=51&&c<=57) s = cloud()+rain;
+  else if(c>=61&&c<=67) s = cloud()+ (c>=65?heavyrain:rain);
+  else if(c>=71&&c<=77) s = cloud('#c2d4df')+snow;
+  else if(c>=80&&c<=82) s = (day?'<circle cx="9" cy="8" r="3.4" fill="#ffb43d"/>':'')+cloud()+ (c===82?heavyrain:rain);
+  else if(c>=85&&c<=86) s = cloud('#c2d4df')+snow;
+  else if(c>=95) s = cloud('#8197a8')+bolt+rain;
+  else s = cloud();
+  return `<svg viewBox="0 0 24 24" width="100%" height="100%">${s}</svg>`;
+}
+const COMPASS=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+const compass = d => COMPASS[Math.round(((d%360)/22.5))%16];
+
+/* =========================================================
+   FETCH HELPERS
+   ========================================================= */
+async function getJSON(url){
+  const r = await fetch(url,{cache:'no-store'});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+
+/* =========================================================
+   WEATHER (Open-Meteo)
+   ========================================================= */
+let sunToday=null;   // {sunrise:Date, sunset:Date} for the arc/countdown
+async function loadWeather(){
+  const u='https://api.open-meteo.com/v1/forecast?latitude='+L().lat+'&longitude='+L().lon+
+    '&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m'+
+    '&hourly=temperature_2m,precipitation_probability,weather_code'+
+    '&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_probability_max,precipitation_sum'+
+    '&timezone='+encodeURIComponent(CFG.tz)+'&wind_speed_unit=mph&forecast_days=7';
+  const d = await getJSON(u);
+  // ---- current ----
+  const cur=d.current, day=cur.is_day===1;
+  $('wxIco').innerHTML = wxIcon(cur.weather_code, day);
+  $('wxTemp').innerHTML = Math.round(cur.temperature_2m)+'<sup>°</sup>';
+  $('wxCond').textContent = wxLabel(cur.weather_code);
+  $('wxFeels').textContent = 'Feels like '+Math.round(cur.apparent_temperature)+'°';
+  const wd=cur.wind_direction_10m;
+  $('wxStats').innerHTML =
+    chip('wind', `${Math.round(cur.wind_speed_10m)} mph <span style="color:var(--ink-faint)">${compass(wd)}</span>`, wd) +
+    chip('gust', `${Math.round(cur.wind_gusts_10m)} mph`) +
+    chip('drop', `${cur.relative_humidity_2m}%`) +
+    chip('rain', `${(cur.precipitation||0).toFixed(1)} mm`);
+  // ---- hourly (next 12) ----
+  renderHours(d.hourly, day);
+  // ---- daily (7) ----
+  renderDays(d.daily);
+  // ---- sun ----
+  setSun(d.daily);
+  $('uvVal').textContent = d.daily.uv_index_max ? Math.round(d.daily.uv_index_max[0]) : '—';
+  state.lastOK.weather = nowMs(); state.anyData=true;
+  $('wxUpd').textContent = 'updated '+relWords(state.lastOK.weather);
+}
+function chip(kind,html,windDeg){
+  const ic={
+    wind:'<path d="M3 8h11a3 3 0 1 0-3-3M3 16h15a3 3 0 1 1-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>',
+    gust:'<path d="M2 7h12a2.5 2.5 0 1 0-2.5-2.5M2 12h17M2 17h11a2.5 2.5 0 1 1-2.5 2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>',
+    drop:'<path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11Z" stroke="currentColor" stroke-width="2" fill="none"/>',
+    rain:'<path d="M7 14a5 5 0 0 1 .5-9.96A6 6 0 0 1 18 8.5 3.5 3.5 0 0 1 17.5 14M9 18l-1 3M15 18l-1 3M12 19l-1 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>'
+  }[kind];
+  const rot = (kind==='wind'&&windDeg!=null)?` style="transform:rotate(${(windDeg+180)%360}deg)"`:'';
+  const cls = kind==='wind'?'windico':'';
+  return `<span class="chip"><svg class="${cls}"${rot} viewBox="0 0 24 24">${ic}</svg><b>${html}</b></span>`;
+}
+function renderHours(h,dayNow){
+  const times=h.time, T=h.temperature_2m, C=h.weather_code, P=h.precipitation_probability;
+  const now=new Date();
+  let start=times.findIndex(t=>new Date(t)>=new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours()));
+  if(start<0)start=0;
+  let html='';
+  for(let i=start;i<start+12&&i<times.length;i++){
+    const dt=new Date(times[i]); const hh=dt.getHours();
+    const isNow=i===start;
+    const isDay=hh>=6&&hh<20; // for icon sun/moon
+    html+=`<div class="hr${isNow?' now':''}"><div class="ht">${isNow?'Now':pad(hh)+':00'}</div>
+      <div class="hi">${wxIcon(C[i],isDay)}</div>
+      <div class="htemp">${Math.round(T[i])}°</div>
+      <div class="hpop">${P[i]>=15?P[i]+'%':'&nbsp;'}</div></div>`;
+  }
+  $('hours').innerHTML=html;
+}
+function renderDays(dl){
+  const days=dl.time, mx=dl.temperature_2m_max, mn=dl.temperature_2m_min, C=dl.weather_code, P=dl.precipitation_probability_max, PS=dl.precipitation_sum;
+  const names=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let html='';
+  for(let i=0;i<days.length&&i<7;i++){
+    const dt=new Date(days[i]+'T12:00');
+    const pop=P?P[i]:0, ps=PS?PS[i]:0;
+    // Open-Meteo's daily code can flag thunderstorms on hot days with ~zero rain. Only show a
+    // rain/storm icon when rain is actually expected; otherwise show a fair icon so the row
+    // reconciles with the temperatures (e.g. a 37° heatwave day reads as sunny, not stormy).
+    const wet = ps>=1 || pop>=50;
+    let icode = C[i];
+    if(!wet && icode>=51) icode = (pop>=20 ? 2 : 1);
+    const rain = pop>=20 ? `<div class="drain">☂ ${pop}%</div>` : `<div class="drain">&nbsp;</div>`;
+    html+=`<div class="dy${i===0?' today':''}"><div class="dn">${i===0?'Today':names[dt.getDay()]}</div>
+      <div class="di">${wxIcon(icode,true)}</div>
+      <div class="dmax">${Math.round(mx[i])}°</div>
+      <div class="dmin">${Math.round(mn[i])}°</div>${rain}</div>`;
+  }
+  $('days').innerHTML=html;
+}
+
+/* =========================================================
+   SUN — arc + countdown
+   ========================================================= */
+function setSun(dl){
+  sunToday={ sunrise:new Date(dl.sunrise[0]), sunset:new Date(dl.sunset[0]),
+             sunriseT:new Date(dl.sunrise[1]) };
+  $('sunriseV').textContent = fmtHM(sunToday.sunrise);
+  $('sunsetV').textContent  = fmtHM(sunToday.sunset);
+  $('sunUpd').textContent = 'updated '+relWords(nowMs());
+  drawSunArc();
+}
+function fmtHM(d){return pad(d.getHours())+':'+pad(d.getMinutes());}
+function drawSunArc(){
+  if(!sunToday)return;
+  const now=new Date(), sr=sunToday.sunrise, ss=sunToday.sunset;
+  let frac=(now-sr)/(ss-sr); const isDayTime=frac>=0&&frac<=1; frac=clamp(frac,0,1);
+  const W=190,H=104,m=14, r=(W-2*m)/2, cx=W/2, cy=H-12;
+  const ang=Math.PI*(1-frac);                 // sunrise (left, π) -> sunset (right, 0)
+  const sx=cx+r*Math.cos(ang), sy=cy-r*Math.sin(ang);
+  const lx=cx-r, rx=cx+r;
+  $('sunArc').innerHTML=`<svg viewBox="0 0 ${W} ${H}">
+    <defs><linearGradient id="sg" x1="0" x2="1"><stop offset="0" stop-color="#ffd479"/><stop offset="1" stop-color="#ff7a59"/></linearGradient></defs>
+    <path d="M${lx} ${cy} A ${r} ${r} 0 0 1 ${rx} ${cy}" fill="none" stroke="rgba(13,42,63,.12)" stroke-width="4" stroke-linecap="round" stroke-dasharray="2 7"/>
+    <path d="M${lx} ${cy} A ${r} ${r} 0 0 1 ${sx.toFixed(1)} ${sy.toFixed(1)}" fill="none" stroke="url(#sg)" stroke-width="4" stroke-linecap="round"/>
+    <line x1="${lx}" y1="${cy}" x2="${rx}" y2="${cy}" stroke="rgba(13,42,63,.12)" stroke-width="2"/>
+    ${isDayTime?`<circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="8" fill="#ffb43d" stroke="#fff" stroke-width="2"/>`:`<circle cx="${now<sr?lx:rx}" cy="${cy}" r="5" fill="#7d96a8"/>`}
+  </svg>`;
+}
+function tickSun(){
+  if(!sunToday)return;
+  const now=new Date();
+  let target, label;
+  if(now<sunToday.sunrise){ target=sunToday.sunrise; label='Sunrise in'; }
+  else if(now<sunToday.sunset){ target=sunToday.sunset; label='Sunset in'; }
+  else if(sunToday.sunriseT){ target=sunToday.sunriseT; label='Sunrise in'; }
+  else { $('sunNextK').textContent='Night'; $('sunNextV').textContent='—'; return; }
+  $('sunNextK').textContent=label;
+  $('sunNextV').textContent=dur(target-now);
+  drawSunArc();
+}
+function dur(ms){ if(ms<0)ms=0; const m=Math.floor(ms/60000); const h=Math.floor(m/60); const mm=m%60;
+  return h>0? h+'h '+pad(mm)+'m' : mm+'m '+pad(Math.floor((ms%60000)/1000))+'s'; }
+
+/* =========================================================
+   SEA TEMPERATURE (Open-Meteo marine)
+   ========================================================= */
+async function loadMarine(){
+  // try a few wet grid-cells in the channel; coastal cells sometimes return null
+  const pts=L().marinePts;
+  for(const [la,lo] of pts){
+    try{
+      const u='https://marine-api.open-meteo.com/v1/marine?latitude='+la+'&longitude='+lo+
+        '&current=sea_surface_temperature&timezone='+encodeURIComponent(CFG.tz);
+      const d=await getJSON(u);
+      const t=d.current&&d.current.sea_surface_temperature;
+      if(t!=null&&!isNaN(t)){ $('seaTemp').textContent=(Math.round(t*10)/10).toFixed(1)+'°'; state.lastOK.marine=nowMs(); return; }
+    }catch(e){}
+  }
+  $('seaTemp').textContent='—'; $('waterNote').textContent='Sea temp unavailable just now';
+}
+
+/* =========================================================
+   TIDE — live EA gauge + harmonic fit + prediction
+   ========================================================= */
+// principal constituents resolvable from ~28 days of data (speeds in deg/hr)
+const TC=[['M2',28.9841042],['S2',30.0],['N2',28.4397295],['K1',15.0410686],
+          ['O1',13.9430356],['M4',57.9682084],['MS4',58.9841042],['M6',86.9523127]];
+
+function solve(A,b){ // Gaussian elimination with partial pivoting; A is n x n (row arrays)
+  const n=b.length;
+  for(let i=0;i<n;i++){
+    let p=i; for(let k=i+1;k<n;k++) if(Math.abs(A[k][i])>Math.abs(A[p][i])) p=k;
+    [A[i],A[p]]=[A[p],A[i]]; [b[i],b[p]]=[b[p],b[i]];
+    const piv=A[i][i]||1e-12;
+    for(let k=i+1;k<n;k++){ const f=A[k][i]/piv; for(let j=i;j<n;j++)A[k][j]-=f*A[i][j]; b[k]-=f*b[i]; }
+  }
+  const x=new Array(n).fill(0);
+  for(let i=n-1;i>=0;i--){ let s=b[i]; for(let j=i+1;j<n;j++)s-=A[i][j]*x[j]; x[i]=s/(A[i][i]||1e-12); }
+  return x;
+}
+let tideModel=null; // {t0, coeffs, speeds[], mean}
+function fitTide(samples){ // samples: [{t:ms, v:m}], evenly-ish spaced
+  const t0=samples[0].t;
+  const cols=[]; // basis functions
+  cols.push(()=>1);
+  const w=TC.map(c=>c[1]*Math.PI/180); // rad per hour
+  w.forEach(wk=>{ cols.push(h=>Math.cos(wk*h)); cols.push(h=>Math.sin(wk*h)); });
+  const m=cols.length, n=samples.length;
+  const At=Array.from({length:m},()=>new Array(m).fill(0));
+  const bt=new Array(m).fill(0);
+  for(let s=0;s<n;s++){
+    const h=(samples[s].t-t0)/3600000, y=samples[s].v;
+    const row=cols.map(f=>f(h));
+    for(let i=0;i<m;i++){ bt[i]+=row[i]*y; for(let j=0;j<m;j++)At[i][j]+=row[i]*row[j]; }
+  }
+  for(let i=0;i<m;i++)At[i][i]+=1e-6; // tiny ridge for stability
+  const c=solve(At,bt);
+  tideModel={t0,c,w};
+  return tideModel;
+}
+function tideAt(ms){ // predicted level (mAOD) at time ms
+  if(!tideModel)return null;
+  const h=(ms-tideModel.t0)/3600000; const c=tideModel.c, w=tideModel.w;
+  let v=c[0], k=1;
+  for(let i=0;i<w.length;i++){ v+=c[k++]*Math.cos(w[i]*h)+c[k++]*Math.sin(w[i]*h); }
+  return v;
+}
+function findExtrema(fromMs,toMs){ // scan model for highs/lows
+  const step=4*60000, ex=[]; let pv=tideAt(fromMs-step), v=tideAt(fromMs);
+  for(let t=fromMs;t<=toMs;t+=step){
+    const nv=tideAt(t+step);
+    if(pv!=null&&nv!=null){
+      if(v>pv&&v>=nv) ex.push({t,type:'high',h:v});
+      else if(v<pv&&v<=nv) ex.push({t,type:'low',h:v});
+    }
+    pv=v; v=nv;
+  }
+  // refine + de-duplicate (min 3h apart)
+  const out=[]; for(const e of ex){ if(!out.length||e.t-out[out.length-1].t>3*3600000) out.push(e); else if((e.type==='high'&&e.h>out[out.length-1].h)||(e.type==='low'&&e.h<out[out.length-1].h)) out[out.length-1]=e; }
+  return out;
+}
+const toCD = mAOD => mAOD + L().datumOffset;
+
+async function loadTide(){
+  // pull ~28 days of 15-min readings (sorted ascending)
+  // _limit must be high: the EA API otherwise caps at 500 readings (~5 days), too few for a spring/neap fit
+  const since=new Date(nowMs()-28*864e5).toISOString().replace(/\.\d{3}Z$/,'Z');
+  const u='https://environment.data.gov.uk/flood-monitoring/id/measures/'+L().eaMeasure+
+          '/readings?_sorted&_limit=20000&since='+since;
+  const d=await getJSON(u);
+  let pts=(d.items||[]).map(it=>({t:Date.parse(it.dateTime),v:+it.value}))
+            .filter(p=>!isNaN(p.t)&&!isNaN(p.v)&&p.v>-10&&p.v<20)
+            .sort((a,b)=>a.t-b.t);
+  // de-spike: drop points far from neighbours
+  pts=pts.filter((p,i)=>{ if(i===0||i===pts.length-1)return true;
+    const interp=(pts[i-1].v+pts[i+1].v)/2; return Math.abs(p.v-interp)<2.5; });
+  if(pts.length<200) throw new Error('not enough tide data ('+pts.length+')');
+
+  fitTide(pts);
+  const latest=pts[pts.length-1];
+  const prev=pts[pts.length-2];
+  const rising = latest.v>prev.v;
+
+  // current level: prefer real latest reading
+  $('tideLevel').textContent = toCD(latest.v).toFixed(2)+' m';
+  const st=$('tideState'); st.className='tide-state '+(rising?'rising':'falling');
+  st.innerHTML = (rising?'Rising':'Falling')+` <span class="arrow">${rising?'▲':'▼'}</span>`;
+
+  // extrema across +/- window
+  const ex=findExtrema(nowMs()-9*3600000, nowMs()+7.2*864e5);
+  const future=ex.filter(e=>e.t>nowMs());
+  const nextHigh=future.find(e=>e.type==='high');
+  const nextLow =future.find(e=>e.type==='low');
+  if(nextHigh){ $('hiTime').textContent=fmtHM(new Date(nextHigh.t));
+    $('hiInfo').textContent=untilTxt(nextHigh.t)+' · '+toCD(nextHigh.h).toFixed(1)+' m'; }
+  if(nextLow){ $('loTime').textContent=fmtHM(new Date(nextLow.t));
+    $('loInfo').textContent=untilTxt(nextLow.t)+' · '+toCD(nextLow.h).toFixed(1)+' m'; }
+
+  // spring / neap: today's range vs fortnight range
+  const allH=ex.filter(e=>e.type==='high').map(e=>e.h);
+  const maxH=Math.max(...allH), minH=Math.min(...allH);
+  const todayHigh=nextHigh?nextHigh.h:maxH;
+  const sf=(todayHigh-minH)/((maxH-minH)||1);
+  const foot=$('tideFoot');
+  const sn = sf>0.66?['spring','Spring tide — big range']:sf<0.34?['neap','Neap tide — small range']:['','Mid-range tide'];
+  foot.innerHTML=`<span class="tag ${sn[0]}">${sn[1]}</span>`+
+    `<span class="tag">Gauge: ${L().gauge} · live</span>`;
+
+  // overtopping advisory (Marine Lake): any predicted high >= threshold in next 7 days
+  const warn=$('tideWarn');
+  const bigs=L().overtop ? ex.filter(e=>e.type==='high'&&e.t>nowMs()&&toCD(e.h)>=L().overtop) : [];
+  if(bigs.length){
+    const b=bigs[0];
+    $('tideWarnTxt').innerHTML=`Possible lake overtopping near ${fmtHM(new Date(b.t))} ${dayWord(b.t)} (~${toCD(b.h).toFixed(1)} m). `+
+      `<a href="https://clevedonmarinelake.org.uk/visit-us/#tides" target="_blank" rel="noopener">Official forecast →</a>`;
+    warn.classList.add('show');
+  } else warn.classList.remove('show');
+
+  drawTideCurve(ex,latest);
+
+  state.lastOK.tide=nowMs(); state.anyData=true;
+  $('tideUpd').textContent='updated '+relWords(state.lastOK.tide);
+  try{ localStorage.setItem('clv_tide',JSON.stringify({t:nowMs(),model:tideModel,latest})); }catch(e){}
+}
+function untilTxt(t){ const m=Math.round((t-nowMs())/60000); const h=Math.floor(m/60); return h>0?`in ${h}h ${pad(m%60)}m`:`in ${m}m`; }
+function dayWord(t){ const d=new Date(t), n=new Date(); const dd=Math.floor((new Date(d.getFullYear(),d.getMonth(),d.getDate())-new Date(n.getFullYear(),n.getMonth(),n.getDate()))/864e5);
+  return dd<=0?'today':dd===1?'tomorrow':['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]; }
+
+function drawTideCurve(ex,latest){
+  // plot model across today (local midnight to midnight)
+  const now=new Date();
+  const d0=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();
+  const d1=d0+864e5;
+  const W=600,H=104, padX=10, padTop=14, padBot=20;
+  const N=144; const xs=[],ys=[]; let lo=1e9,hi=-1e9;
+  for(let i=0;i<=N;i++){ const t=d0+(d1-d0)*i/N; const v=toCD(tideAt(t)); xs.push(t); ys.push(v); if(v<lo)lo=v; if(v>hi)hi=v; }
+  const rng=(hi-lo)||1;
+  const X=t=>padX+(W-2*padX)*(t-d0)/(d1-d0);
+  const Y=v=>padTop+(H-padTop-padBot)*(1-(v-lo)/rng);
+  let path=''; for(let i=0;i<=N;i++){ path+=(i?'L':'M')+X(xs[i]).toFixed(1)+' '+Y(ys[i]).toFixed(1); }
+  const area=path+`L${X(d1)} ${H-padBot} L${X(d0)} ${H-padBot} Z`;
+  // markers for today's highs/lows
+  let marks='';
+  ex.filter(e=>e.t>=d0&&e.t<=d1).forEach(e=>{ const x=X(e.t),y=Y(toCD(e.h));
+    marks+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="${e.type==='high'?'#2f8fe0':'#0b7a86'}"/>`+
+      `<text x="${x.toFixed(1)}" y="${e.type==='high'?(y-7).toFixed(1):(y+13).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="700" fill="${e.type==='high'?'#1d5fa0':'#0b7a86'}" font-family="Outfit,sans-serif">${fmtHM(new Date(e.t))}</text>`; });
+  // "now"
+  const nx=X(Math.min(Math.max(latest.t,d0),d1)), ny=Y(toCD(latest.v));
+  const nowMark=`<line x1="${nx.toFixed(1)}" y1="${padTop-4}" x2="${nx.toFixed(1)}" y2="${H-padBot}" stroke="#ff7a59" stroke-width="1.5" stroke-dasharray="3 3"/>`+
+    `<circle cx="${nx.toFixed(1)}" cy="${ny.toFixed(1)}" r="5" fill="#ff7a59" stroke="#fff" stroke-width="2"/>`;
+  $('tideCurve').innerHTML=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <defs><linearGradient id="tg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="rgba(47,143,224,.32)"/><stop offset="1" stop-color="rgba(47,143,224,.02)"/></linearGradient></defs>
+    <path d="${area}" fill="url(#tg)"/>
+    <path d="${path}" fill="none" stroke="#2f8fe0" stroke-width="2.4" stroke-linejoin="round"/>
+    ${marks}${nowMark}
+  </svg>`;
+}
+
+/* =========================================================
+   LIVENESS + CLOCK
+   ========================================================= */
+function tickClock(){
+  const n=new Date();
+  $('clockT').innerHTML=pad(n.getHours())+':'+pad(n.getMinutes())+'<span class="sec">:'+pad(n.getSeconds())+'</span>';
+  $('clockD').textContent=n.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+}
+function tickLive(){
+  const last=Math.max(state.lastOK.weather,state.lastOK.tide);
+  const age=last?nowMs()-last:Infinity;
+  const dot=$('liveDot'), lab=$('liveLab'), meta=$('liveMeta');
+  if(!state.anyData){ dot.className='dot stale'; lab.textContent='CONNECTING'; meta.textContent='loading data…'; return; }
+  if(age<3*60000){ dot.className='dot live'; lab.textContent='LIVE'; }
+  else if(age<20*60000){ dot.className='dot stale'; lab.textContent='LIVE'; }
+  else { dot.className='dot down'; lab.textContent='STALE'; }
+  meta.textContent='updated '+relWords(last);
+  // refresh per-card "updated" labels
+  if(state.lastOK.weather)$('wxUpd').textContent='updated '+relWords(state.lastOK.weather);
+  if(state.lastOK.tide)$('tideUpd').textContent='updated '+relWords(state.lastOK.tide);
+}
+
+/* =========================================================
+   ORCHESTRATION
+   ========================================================= */
+async function refreshAll(manual){
+  if(manual){ const b=$('refreshBtn'); b.classList.remove('spin'); void b.offsetWidth; b.classList.add('spin'); }
+  await Promise.allSettled([ safe(loadWeather,'weather'), safe(loadTide,'tide'), safe(loadMarine,'marine') ]);
+  tickLive();
+}
+async function safe(fn,name){ try{ await fn(); }catch(e){ console.warn('['+name+'] failed:',e.message);
+  if(name==='tide'){ // try cached model so the curve still shows
+    try{ const c=JSON.parse(localStorage.getItem('clv_tide')); if(c&&c.model){ tideModel=c.model;
+      $('tideUpd').textContent='cached '+relWords(c.t); } }catch(_){} } } }
+
+function restorePrefs(){ try{
+  const lk=localStorage.getItem('clv_loc'); if(lk&&LOCATIONS[lk]) locKey=lk;
+  const h=localStorage.getItem('clv_hero'); heroKey=(h&&L().cams.some(c=>c.key===h))? h : L().cams[0].key;
+}catch(e){ heroKey=L().cams[0].key; } }
+
+$('refreshBtn').onclick=()=>refreshAll(true);
+$('fsBtn').onclick=()=>{ if(!document.fullscreenElement)document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); else document.exitFullscreen&&document.exitFullscreen(); };
+
+// hide cursor on idle (kiosk feel)
+let cur; document.addEventListener('mousemove',()=>{ document.body.style.cursor='default'; clearTimeout(cur); cur=setTimeout(()=>document.body.style.cursor='none',4000); });
+
+function init(){
+  restorePrefs();
+  document.querySelectorAll('.locsel button').forEach(b=>b.classList.toggle('active',b.dataset.loc===locKey));
+  applyLocationChrome();
+  buildTiles();
+  try{ if(localStorage.getItem('clv_cycle')==='1') startCycle(); }catch(e){}
+  tickClock();
+  refreshAll(false);
+  setInterval(tickClock,1000);
+  setInterval(tickSun,1000);
+  setInterval(tickLive,5000);
+  setInterval(()=>safe(loadWeather,'weather').then(tickLive),CFG.refreshWeatherMs);
+  setInterval(()=>safe(loadTide,'tide').then(tickLive),CFG.refreshTideMs);
+  setInterval(()=>safe(loadMarine,'marine'),CFG.refreshMarineMs);
+  setInterval(refreshStillTiles,20000);
+  setInterval(reloadCams,CFG.camReloadMs);
+  setTimeout(()=>location.reload(),CFG.dayReloadMs);
+}
+init();
+</script>
+</body>
+</html>
