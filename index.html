@@ -1253,15 +1253,15 @@ function loadLeaflet(cb){ if(window.L){cb();return;}
   const css=document.createElement('link'); css.rel='stylesheet'; css.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; document.head.appendChild(css);
   const s=document.createElement('script'); s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'; s.onload=cb; document.head.appendChild(s); }
 function initRadar(){ const LF=window.L; if(!LF||!LF.map){ return; }   /* note: app's L() is the location, Leaflet lives on window.L */
-  radarMap=LF.map('radarMap',{zoomControl:true,attributionControl:false}).setView([L().lat,L().lon],8);
-  LF.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:12}).addTo(radarMap);
+  radarMap=LF.map('radarMap',{zoomControl:true,attributionControl:false,minZoom:4,maxZoom:11}).setView([L().lat,L().lon],7);
+  LF.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:11}).addTo(radarMap);
   LF.circleMarker([L().lat,L().lon],{radius:5,color:'#ff7a59',fillColor:'#ff7a59',fillOpacity:1,weight:2}).addTo(radarMap);
   setTimeout(()=>radarMap&&radarMap.invalidateSize(),120);
   loadRadarFrames(); }
 function loadRadarFrames(){ const LF=window.L; if(!radarMap||!LF) return; getJSON('https://api.rainviewer.com/public/weather-maps.json').then(d=>{
   radarLayers.forEach(l=>radarMap.removeLayer(l)); radarLayers=[];
   const host=d.host, frames=(d.radar&&d.radar.past?d.radar.past:[]).concat(d.radar&&d.radar.nowcast?d.radar.nowcast:[]);
-  frames.forEach(fr=>{ const lyr=LF.tileLayer(host+fr.path+'/256/{z}/{x}/{y}/4/1_1.png',{opacity:0,tileSize:256}); lyr.addTo(radarMap); radarLayers.push(lyr); });
+  frames.forEach(fr=>{ const lyr=LF.tileLayer(host+fr.path+'/256/{z}/{x}/{y}/4/1_1.png',{opacity:0,tileSize:256,maxNativeZoom:7,maxZoom:11}); lyr.addTo(radarMap); radarLayers.push(lyr); });
   radarIdx=0; clearInterval(radarAnim); if(radarLayers.length){ stepRadar(); radarAnim=setInterval(stepRadar,650); } }).catch(e=>{ console.warn('radar frames failed',e); }); }
 function stepRadar(){ radarLayers.forEach((l,i)=>l.setOpacity(i===radarIdx?0.7:0)); radarIdx=(radarIdx+1)%radarLayers.length; }
 function openRadar(){ $('radarTitle').textContent='Rain radar · '+L().name; $('radar').classList.add('on');
