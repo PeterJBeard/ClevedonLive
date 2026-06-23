@@ -23,9 +23,9 @@
     --body:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%}
+  html,body{height:100%;overflow:hidden}
   body{
-    font-family:var(--body); color:var(--ink); overflow-x:hidden; overflow-y:auto;
+    font-family:var(--body); color:var(--ink); overflow:hidden;
     --sky-a:#eaf6ff; --sky-b:#dceffb; --sky-c:#fff6e8; --glowA:rgba(255,180,61,.22); --glowB:rgba(8,165,181,.20);
     background:
       radial-gradient(1200px 700px at 82% -8%, var(--glowA), transparent 60%),
@@ -65,7 +65,7 @@
   @keyframes sail{to{left:106%}}
   @keyframes bob{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-5px) rotate(5deg)}}
   body.sky-night #sea .wave{filter:brightness(.7)}
-  .app{position:relative;z-index:1;display:flex;flex-direction:column;min-height:100vh;padding:clamp(10px,1.3vw,20px);padding-bottom:clamp(42px,5.4vh,64px);gap:clamp(9px,1vw,15px)}
+  .app{position:relative;z-index:1;display:flex;flex-direction:column;min-height:100vh;padding:clamp(8px,1.1vw,18px);padding-bottom:clamp(24px,3.4vh,42px);gap:clamp(7px,.85vw,13px);transform-origin:top center;will-change:transform}
 
   /* ---------- Top bar ---------- */
   .topbar{display:flex;align-items:center;gap:clamp(12px,1.6vw,26px);flex-wrap:nowrap}
@@ -100,9 +100,9 @@
   @keyframes spin{to{transform:rotate(360deg)}}
 
   /* ---------- Main grid ---------- */
-  .main{flex:1;display:grid;grid-template-columns:1.5fr 1fr;gap:clamp(9px,1vw,15px);min-height:0}
+  .main{flex:1;display:grid;grid-template-columns:1.5fr 1fr;gap:clamp(9px,1vw,15px);min-height:clamp(210px,28vh,460px)}
   .cams{display:flex;flex-direction:column;gap:clamp(9px,1vw,15px);min-height:0}
-  .stage{position:relative;flex:1;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);background:#0b2233;min-height:clamp(300px,42vh,560px);--pipw:clamp(78px,8vw,120px)}
+  .stage{position:relative;flex:1;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);background:#0b2233;min-height:0;--pipw:clamp(78px,8vw,120px)}
   .stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
   .stage .veil{position:absolute;inset:0;display:grid;place-items:center;background:linear-gradient(180deg,#0b2233,#0e3147);color:#cfe8f2;font-family:var(--display);z-index:1;gap:10px;text-align:center;padding:20px;transition:opacity .4s}
   .stage .veil.hide{opacity:0;pointer-events:none}
@@ -163,9 +163,9 @@
   .thumb.active .ld{background:#19d36a;box-shadow:0 0 0 3px rgba(25,211,106,.25)}
 
   /* ---------- Right rail cards ---------- */
-  .rail{display:grid;grid-template-rows:auto auto auto;gap:clamp(9px,1vw,15px);min-height:0}
+  .rail{display:grid;grid-template-rows:1fr 1fr 1fr;gap:clamp(7px,.85vw,13px);min-height:0}
   .card{background:var(--card);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:var(--r);
-    padding:clamp(12px,1.1vw,18px);box-shadow:var(--shadow-soft);min-height:0;display:flex;flex-direction:column}
+    padding:clamp(10px,1vw,16px);box-shadow:var(--shadow-soft);min-height:0;overflow:hidden;display:flex;flex-direction:column}
   .card-h{display:flex;align-items:center;gap:9px;margin-bottom:10px}
   .card-h .ci{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;color:#fff;flex:none}
   .card-h .ci svg{width:15px;height:15px}
@@ -1252,21 +1252,39 @@ let radarMap=null, radarLayers=[], radarIdx=0, radarAnim=null;
 function loadLeaflet(cb){ if(window.L){cb();return;}
   const css=document.createElement('link'); css.rel='stylesheet'; css.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; document.head.appendChild(css);
   const s=document.createElement('script'); s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'; s.onload=cb; document.head.appendChild(s); }
-function initRadar(){ radarMap=L.map('radarMap',{zoomControl:true,attributionControl:false}).setView([L().lat,L().lon],8);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:12}).addTo(radarMap);
-  L.circleMarker([L().lat,L().lon],{radius:5,color:'#ff7a59',fillColor:'#ff7a59',fillOpacity:1,weight:2}).addTo(radarMap);
+function initRadar(){ const LF=window.L; if(!LF||!LF.map){ return; }   /* note: app's L() is the location, Leaflet lives on window.L */
+  radarMap=LF.map('radarMap',{zoomControl:true,attributionControl:false}).setView([L().lat,L().lon],8);
+  LF.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:12}).addTo(radarMap);
+  LF.circleMarker([L().lat,L().lon],{radius:5,color:'#ff7a59',fillColor:'#ff7a59',fillOpacity:1,weight:2}).addTo(radarMap);
+  setTimeout(()=>radarMap&&radarMap.invalidateSize(),120);
   loadRadarFrames(); }
-function loadRadarFrames(){ getJSON('https://api.rainviewer.com/public/weather-maps.json').then(d=>{
+function loadRadarFrames(){ const LF=window.L; if(!radarMap||!LF) return; getJSON('https://api.rainviewer.com/public/weather-maps.json').then(d=>{
   radarLayers.forEach(l=>radarMap.removeLayer(l)); radarLayers=[];
-  const host=d.host, frames=(d.radar.past||[]).concat(d.radar.nowcast||[]);
-  frames.forEach(fr=>{ const lyr=L.tileLayer(host+fr.path+'/256/{z}/{x}/{y}/4/1_1.png',{opacity:0,tileSize:256}); lyr.addTo(radarMap); radarLayers.push(lyr); });
-  radarIdx=0; clearInterval(radarAnim); if(radarLayers.length){ stepRadar(); radarAnim=setInterval(stepRadar,650); } }).catch(e=>{}); }
+  const host=d.host, frames=(d.radar&&d.radar.past?d.radar.past:[]).concat(d.radar&&d.radar.nowcast?d.radar.nowcast:[]);
+  frames.forEach(fr=>{ const lyr=LF.tileLayer(host+fr.path+'/256/{z}/{x}/{y}/4/1_1.png',{opacity:0,tileSize:256}); lyr.addTo(radarMap); radarLayers.push(lyr); });
+  radarIdx=0; clearInterval(radarAnim); if(radarLayers.length){ stepRadar(); radarAnim=setInterval(stepRadar,650); } }).catch(e=>{ console.warn('radar frames failed',e); }); }
 function stepRadar(){ radarLayers.forEach((l,i)=>l.setOpacity(i===radarIdx?0.7:0)); radarIdx=(radarIdx+1)%radarLayers.length; }
 function openRadar(){ $('radarTitle').textContent='Rain radar · '+L().name; $('radar').classList.add('on');
   loadLeaflet(()=>{ if(!radarMap) initRadar(); else { radarMap.setView([L().lat,L().lon],8); loadRadarFrames(); } setTimeout(()=>radarMap&&radarMap.invalidateSize(),200); }); }
 function closeRadar(){ $('radar').classList.remove('on'); clearInterval(radarAnim); }
 $('radarBtn').onclick=openRadar; $('radarClose').onclick=closeRadar;
 $('radar').addEventListener('click',e=>{ if(e.target.id==='radar') closeRadar(); });
+
+/* Fit-to-screen: keep the whole board visible on a TV at any zoom, no scrolling.
+   The board grows to its natural height; if that exceeds the viewport we scale it
+   down to fit. At 100% on a normal screen the scale is 1 (perfectly crisp). */
+let _fitRaf=0, _fitObs=null;
+function fitBoard(){
+  const app=document.querySelector('.app'); if(!app) return;
+  app.style.transform='none';
+  const natH=app.offsetHeight, natW=app.offsetWidth;
+  const s=Math.min(1, window.innerHeight/natH, window.innerWidth/natW);
+  app.style.transform = s<0.998 ? 'scale('+s.toFixed(4)+')' : 'none';
+}
+function scheduleFit(){ cancelAnimationFrame(_fitRaf); _fitRaf=requestAnimationFrame(fitBoard); }
+window.addEventListener('resize', scheduleFit, {passive:true});
+window.addEventListener('orientationchange', scheduleFit);
+if(document.fonts && document.fonts.ready){ document.fonts.ready.then(scheduleFit); }
 
 function init(){
   restorePrefs();
@@ -1291,6 +1309,9 @@ function init(){
   setInterval(reloadCams,CFG.camReloadMs);
   setInterval(()=>{ if($('radar').classList.contains('on')) loadRadarFrames(); }, 5*60000);
   setTimeout(()=>location.reload(),CFG.dayReloadMs);
+  scheduleFit();
+  setTimeout(fitBoard,300); setTimeout(fitBoard,1200);
+  try{ _fitObs=new ResizeObserver(scheduleFit); _fitObs.observe(document.querySelector('.app')); }catch(e){}
 }
 init();
 </script>
