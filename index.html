@@ -257,6 +257,28 @@
   .dy .dmin{font-size:clamp(10px,.85vw,12px);color:var(--ink-faint);font-variant-numeric:tabular-nums}
   .dy .drain{font-size:clamp(9px,.78vw,11px);color:var(--sea);font-weight:700;font-variant-numeric:tabular-nums;min-height:1em}
 
+  /* ---------- Conditions row: wind, moon, air, pollen (facts only) ---------- */
+  .conditions{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(9px,1vw,15px);flex:none}
+  .ctile{background:var(--card);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:var(--r);
+    padding:clamp(9px,.85vw,14px) clamp(11px,1vw,16px);box-shadow:var(--shadow-soft);min-width:0;color:var(--ink);display:flex;flex-direction:column;gap:6px;justify-content:center}
+  .ct-h{display:flex;align-items:center;gap:7px;font-family:var(--display);font-weight:700;font-size:clamp(10px,.9vw,13px);color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em}
+  .ct-h svg{width:14px;height:14px;color:var(--teal-deep)}
+  .ct-body{display:flex;align-items:center;gap:11px}
+  .ct-body .big{font-family:var(--display);font-weight:800;font-size:clamp(20px,2vw,30px);line-height:1;font-variant-numeric:tabular-nums}
+  .ct-body .big span{font-size:.42em;font-weight:600;color:var(--ink-soft)}
+  .ct-body .sub{font-size:clamp(10px,.85vw,12px);color:var(--ink);font-weight:600;margin-top:3px}
+  .ct-body .sub2{font-size:clamp(9px,.78vw,11px);color:var(--ink-soft);margin-top:2px}
+  .winddial{flex:none;width:clamp(44px,4vw,58px)} .winddial svg{width:100%;height:auto;display:block}
+  .moonglyph{flex:none;width:clamp(34px,3.4vw,46px)} .moonglyph svg{width:100%;height:auto;display:block;filter:drop-shadow(0 1px 2px rgba(13,42,63,.2))}
+  .big2{font-family:var(--display);font-weight:800;font-size:clamp(13px,1.2vw,17px);line-height:1.1}
+  .cat{font-weight:700;border-radius:6px;padding:1px 7px;font-size:.82em;white-space:nowrap}
+  .q1{background:rgba(31,177,95,.16);color:#157a41} .q2{background:rgba(140,190,60,.2);color:#5c7a12}
+  .q3{background:rgba(242,169,59,.2);color:#9a6512} .q4{background:rgba(255,122,89,.2);color:#b2401f}
+  .q5{background:rgba(226,85,63,.22);color:#9c2a17} .q6{background:rgba(150,40,80,.22);color:#7a1840}
+  .prow{display:flex;align-items:center;gap:7px;font-size:clamp(10px,.85vw,12px);color:var(--ink-soft)}
+  .prow b{font-family:var(--display);color:var(--ink);font-weight:700;min-width:46px}
+  .prow .pval{margin-left:auto;color:var(--ink-faint);font-variant-numeric:tabular-nums}
+
   .footer{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:clamp(9px,.8vw,11.5px);color:var(--ink-faint);padding:0 4px}
   .footer a{color:var(--ink-soft);text-decoration:none;font-weight:600}
   .footer a:hover{color:var(--teal-deep);text-decoration:underline}
@@ -268,6 +290,7 @@
     .app{height:auto;min-height:100vh}
     .main{grid-template-columns:1fr}
     .strips{grid-template-columns:1fr}
+    .conditions{grid-template-columns:repeat(2,1fr)}
     .stage{min-height:46vw}
     .hours{overflow-x:auto}
   }
@@ -402,6 +425,14 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- CONDITIONS (wind, moon, air, pollen) -->
+  <div class="conditions">
+    <div class="ctile" id="windTile"><div class="ct-h">Wind</div></div>
+    <div class="ctile" id="moonTile"><div class="ct-h">Moon</div></div>
+    <div class="ctile" id="airTile"><div class="ct-h">Air quality</div></div>
+    <div class="ctile" id="pollenTile"><div class="ct-h">Pollen</div></div>
   </div>
 
   <!-- BOTTOM STRIPS -->
@@ -639,6 +670,7 @@ async function loadWeather(){
     chip('gust', `${Math.round(cur.wind_gusts_10m)} mph`) +
     chip('drop', `${cur.relative_humidity_2m}%`) +
     chip('rain', `${(cur.precipitation||0).toFixed(1)} mm`);
+  renderWind(cur);
   // ---- hourly (next 12) ----
   renderHours(d.hourly, day);
   // ---- daily (7) ----
@@ -788,6 +820,85 @@ async function loadMarine(){
     }catch(e){}
   }
   $('seaTemp').textContent='—'; $('waterNote').textContent='Sea temp unavailable just now';
+}
+
+/* =========================================================
+   CONDITIONS — wind, moon, air quality, pollen
+   Facts and figures only — no recommendations or advice.
+   ========================================================= */
+const IC={
+  wind:'<svg viewBox="0 0 24 24" fill="none"><path d="M3 8h11a3 3 0 1 0-3-3M3 16h15a3 3 0 1 1-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  moon:'<svg viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8 8 0 0 1 9.5 4 7 7 0 1 0 20 14.5Z" fill="currentColor"/></svg>',
+  air:'<svg viewBox="0 0 24 24" fill="none"><path d="M3 8h10a2.5 2.5 0 1 0-2.5-2.5M3 12h15a2.5 2.5 0 1 1-2.5 2.5M3 16h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  pollen:'<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 9V4M12 15v5M9 12H4M15 12h5M9.8 9.8 6.5 6.5M14.2 9.8 17.5 6.5M9.8 14.2 6.5 17.5M14.2 14.2 17.5 17.5"/></g></svg>'
+};
+function beaufort(mph){ const t=[1,4,8,13,19,25,32,39,47,55,64,73],
+  n=['Calm','Light air','Light breeze','Gentle breeze','Moderate breeze','Fresh breeze','Strong breeze','Near gale','Gale','Strong gale','Storm','Violent storm','Hurricane'];
+  let f=0; t.forEach((x,i)=>{ if(mph>=x)f=i+1; }); return {f,name:n[f]}; }
+function renderWind(cur){
+  if(cur.wind_speed_10m==null) return;
+  const mph=Math.round(cur.wind_speed_10m), g=Math.round(cur.wind_gusts_10m||0),
+        kn=Math.round(cur.wind_speed_10m*0.8690), dir=cur.wind_direction_10m||0, bf=beaufort(cur.wind_speed_10m);
+  const dial=`<svg viewBox="0 0 64 64">
+    <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(13,42,63,.12)" stroke-width="2"/>
+    <text x="32" y="13" text-anchor="middle" font-size="9" font-weight="700" fill="#7d96a8" font-family="Outfit,sans-serif">N</text>
+    <g transform="rotate(${dir} 32 32)"><line x1="32" y1="20" x2="32" y2="48" stroke="rgba(47,143,224,.4)" stroke-width="2" stroke-linecap="round"/><path d="M32 8 L37.5 23 L32 19 L26.5 23 Z" fill="#2f8fe0"/></g>
+  </svg>`;
+  $('windTile').innerHTML=`<div class="ct-h">${IC.wind}Wind</div>
+    <div class="ct-body"><div class="winddial">${dial}</div>
+      <div><div class="big">${mph}<span> mph</span></div>
+        <div class="sub">from ${compass(dir)} · F${bf.f} ${bf.name}</div>
+        <div class="sub2">Gusts ${g} mph · ${kn} kn</div></div></div>`;
+}
+function moonInfo(d){ const syn=29.530588853, ref=Date.UTC(2000,0,6,18,14)/864e5;
+  let p=((d.getTime()/864e5 - ref)/syn)%1; if(p<0)p+=1;          // 0 = new, 0.5 = full
+  const illum=Math.round((1-Math.cos(2*Math.PI*p))/2*100);
+  let name='New moon';
+  if(p>=0.975||p<0.025)name='New moon'; else if(p<0.235)name='Waxing crescent'; else if(p<0.265)name='First quarter';
+  else if(p<0.475)name='Waxing gibbous'; else if(p<0.525)name='Full moon'; else if(p<0.735)name='Waning gibbous';
+  else if(p<0.765)name='Last quarter'; else name='Waning crescent';
+  return {p,illum,name, toFull:((0.5-p+1)%1)*syn };
+}
+function moonGlyph(name){ const D='#2b3656',Lt='#f4e8c4', base=v=>`<circle cx="20" cy="20" r="18" fill="${v}"/>`,
+  R='M20 2 A18 18 0 0 1 20 38', Lh='M20 2 A18 18 0 0 0 20 38';
+  switch(name){
+    case 'Full moon': return base(Lt);
+    case 'New moon': return `<circle cx="20" cy="20" r="18" fill="${D}" stroke="#46527d" stroke-width="1.2"/>`;
+    case 'First quarter': return base(D)+`<path d="${R} Z" fill="${Lt}"/>`;
+    case 'Last quarter': return base(D)+`<path d="${Lh} Z" fill="${Lt}"/>`;
+    case 'Waxing crescent': return base(D)+`<path d="${R} A9 18 0 0 0 20 2 Z" fill="${Lt}"/>`;
+    case 'Waning crescent': return base(D)+`<path d="${Lh} A9 18 0 0 1 20 2 Z" fill="${Lt}"/>`;
+    case 'Waxing gibbous': return base(Lt)+`<path d="${Lh} A9 18 0 0 1 20 2 Z" fill="${D}"/>`;
+    case 'Waning gibbous': return base(Lt)+`<path d="${R} A9 18 0 0 0 20 2 Z" fill="${D}"/>`;
+  }
+  return base(D);
+}
+function renderMoon(){ const mi=moonInfo(new Date());
+  const fullDate=new Date(Date.now()+mi.toFull*864e5).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  $('moonTile').innerHTML=`<div class="ct-h">${IC.moon}Moon</div>
+    <div class="ct-body"><div class="moonglyph"><svg viewBox="0 0 40 40">${moonGlyph(mi.name)}</svg></div>
+      <div><div class="big2">${mi.name}</div>
+        <div class="sub2">${mi.illum}% illuminated</div>
+        <div class="sub2">Next full moon ${fullDate}</div></div></div>`;
+}
+function aqiCat(v){ if(v==null)return['—','']; if(v<=20)return['Good','q1']; if(v<=40)return['Fair','q2']; if(v<=60)return['Moderate','q3']; if(v<=80)return['Poor','q4']; if(v<=100)return['Very poor','q5']; return['Extremely poor','q6']; }
+function pollenLvl(v){ if(v==null)return['—','']; if(v<1)return['None','']; if(v<20)return['Low','q1']; if(v<50)return['Moderate','q3']; if(v<150)return['High','q4']; return['Very high','q5']; }
+function renderAir(c){ const aqi=c.european_aqi, cat=aqiCat(aqi);
+  $('airTile').innerHTML=`<div class="ct-h">${IC.air}Air quality</div>
+    <div class="big2">${aqi!=null?Math.round(aqi):'—'} <span class="cat ${cat[1]}">${cat[0]}</span></div>
+    <div class="sub2">European AQI</div>
+    <div class="sub2">PM2.5 ${c.pm2_5!=null?Math.round(c.pm2_5):'—'} · PM10 ${c.pm10!=null?Math.round(c.pm10):'—'} µg/m³</div>`;
+}
+function renderPollen(c){
+  const tree=(c.birch_pollen==null&&c.alder_pollen==null)?null:Math.max(c.birch_pollen||0,c.alder_pollen||0);
+  const weed=(c.ragweed_pollen==null&&c.mugwort_pollen==null)?null:Math.max(c.ragweed_pollen||0,c.mugwort_pollen||0);
+  const row=(lab,v)=>{ const l=pollenLvl(v); return `<div class="prow"><b>${lab}</b><span class="cat ${l[1]}">${l[0]}</span><span class="pval">${v!=null?Math.round(v):''}</span></div>`; };
+  $('pollenTile').innerHTML=`<div class="ct-h">${IC.pollen}Pollen</div>${row('Grass',c.grass_pollen)}${row('Tree',tree)}${row('Weed',weed)}`;
+}
+async function loadAir(){
+  const u='https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+L().lat+'&longitude='+L().lon+
+    '&current=european_aqi,pm2_5,pm10,grass_pollen,birch_pollen,alder_pollen,ragweed_pollen,mugwort_pollen&timezone='+encodeURIComponent(CFG.tz);
+  const d=await getJSON(u); renderAir(d.current||{}); renderPollen(d.current||{});
 }
 
 /* =========================================================
@@ -974,7 +1085,7 @@ function tickLive(){
    ========================================================= */
 async function refreshAll(manual){
   if(manual){ const b=$('refreshBtn'); b.classList.remove('spin'); void b.offsetWidth; b.classList.add('spin'); }
-  await Promise.allSettled([ safe(loadWeather,'weather'), safe(loadTide,'tide'), safe(loadMarine,'marine') ]);
+  await Promise.allSettled([ safe(loadWeather,'weather'), safe(loadTide,'tide'), safe(loadMarine,'marine'), safe(loadAir,'air') ]);
   tickLive();
 }
 async function safe(fn,name){ try{ await fn(); }catch(e){ console.warn('['+name+'] failed:',e.message);
@@ -999,6 +1110,7 @@ function init(){
   applyLocationChrome();
   buildTiles();
   genStars(46);
+  renderMoon();
   try{ if(localStorage.getItem('clv_cycle')==='1') startCycle(); }catch(e){}
   tickClock();
   refreshAll(false);
@@ -1008,6 +1120,8 @@ function init(){
   setInterval(()=>safe(loadWeather,'weather').then(tickLive),CFG.refreshWeatherMs);
   setInterval(()=>safe(loadTide,'tide').then(tickLive),CFG.refreshTideMs);
   setInterval(()=>safe(loadMarine,'marine'),CFG.refreshMarineMs);
+  setInterval(()=>safe(loadAir,'air'),CFG.refreshWeatherMs);
+  setInterval(renderMoon,3600000);
   setInterval(refreshStillTiles,20000);
   setInterval(reloadCams,CFG.camReloadMs);
   setTimeout(()=>location.reload(),CFG.dayReloadMs);
