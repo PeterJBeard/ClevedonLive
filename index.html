@@ -83,6 +83,15 @@
   .clock .t{font-weight:700;font-size:clamp(22px,2.4vw,40px);line-height:1;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
   .clock .t .sec{color:var(--teal);font-weight:600;font-size:.62em;margin-left:1px}
   .clock .d{font-size:clamp(11px,1vw,15px);color:var(--ink-soft);font-weight:500;margin-top:4px}
+  /* friendly "right now" summary line under the header */
+  .nowline{flex:none;display:flex;align-items:center;gap:10px;margin:-2px 2px 0;
+    font-family:var(--display);font-weight:600;font-size:clamp(12.5px,1.18vw,18px);color:var(--ink-soft);
+    letter-spacing:.005em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nowline::before{content:"";flex:none;width:9px;height:9px;border-radius:50%;background:var(--teal);
+    box-shadow:0 0 0 4px rgba(8,165,181,.16);animation:nowpulse 2.6s ease-in-out infinite}
+  .nowline b{color:var(--ink);font-weight:700}
+  @keyframes nowpulse{0%,100%{box-shadow:0 0 0 3px rgba(8,165,181,.18)}50%{box-shadow:0 0 0 6px rgba(8,165,181,.05)}}
+  body.sky-night .nowline{color:#bcd0ec} body.sky-night .nowline b{color:#eaf3ff}
 
   .live-pill{display:flex;align-items:center;gap:9px;background:var(--card-solid);border:1px solid var(--line);
     border-radius:999px;padding:8px 14px 8px 12px;box-shadow:var(--shadow-soft);cursor:default}
@@ -387,6 +396,9 @@
       <div class="d" id="clockD">&nbsp;</div>
     </div>
   </div>
+
+  <!-- RIGHT NOW -->
+  <div class="nowline" id="nowline">Reading the latest conditions…</div>
 
   <!-- MAIN -->
   <div class="main">
@@ -752,6 +764,7 @@ async function loadWeather(){
     chip('rain', `${(cur.precipitation||0).toFixed(1)} mm`) +
     (pt?chip('press', `${Math.round(pt.now)} hPa ${pt.dir==='rising'?'↗':pt.dir==='falling'?'↘':'→'}`):'');
   renderWind(cur);
+  state.now={code:cur.weather_code,temp:cur.temperature_2m,windMph:cur.wind_speed_10m,windDir:cur.wind_direction_10m}; renderNowLine();
   // ---- hourly (next 12) ----
   renderHours(d.hourly, day);
   // ---- daily (7) ----
@@ -862,6 +875,15 @@ function dur(ms){ if(ms<0)ms=0; const m=Math.floor(ms/60000); const h=Math.floor
    PERSONALITY — greeting, sky-by-sun, starfield, count-up
    ========================================================= */
 function greet(h){ return h<12?'Good morning':h<17?'Good afternoon':h<21?'Good evening':'Good night'; }
+/* friendly one-line "right now" readout, composed from the latest weather + tide */
+function windPhrase(mph,dir){ const b=beaufort(mph); if(b.f===0) return 'barely a breath of wind';
+  const nm=b.name.toLowerCase(); const art=(b.f===1)?'':(/^[aeiou]/.test(nm)?'an ':'a ');
+  return art+nm+' from the '+compass(dir); }
+function renderNowLine(){ const el=$('nowline'); if(!el) return; const n=state.now; if(!n) return;
+  let s='<b>'+wxLabel(n.code)+', '+Math.round(n.temp)+'°</b>, '+windPhrase(n.windMph,n.windDir);
+  const t=state.nextTide;
+  if(t){ s+='. '+(t.type==='high'?'High water':'Low water')+' at <b>'+fmtHM(new Date(t.t))+'</b> ('+untilTxt(t.t)+')'; }
+  el.innerHTML=s+'.'; }
 function setSky(){            // tint the whole page to match the real time of day
   if(!sunToday) return;
   const now=+new Date(), sr=+sunToday.sunrise, ss=+sunToday.sunset, M=60000;
@@ -1075,6 +1097,7 @@ async function loadTide(){
   // extrema across +/- window
   const ex=findExtrema(nowMs()-9*3600000, nowMs()+7.2*864e5);
   const future=ex.filter(e=>e.t>nowMs());
+  if(future[0]){ state.nextTide={type:future[0].type,t:future[0].t}; renderNowLine(); }
   const nextHigh=future.find(e=>e.type==='high');
   const nextLow =future.find(e=>e.type==='low');
   if(nextHigh){ $('hiTime').textContent=fmtHM(new Date(nextHigh.t));
