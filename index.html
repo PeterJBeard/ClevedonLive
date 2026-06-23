@@ -25,7 +25,7 @@
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
   body{
-    font-family:var(--body); color:var(--ink); overflow:hidden;
+    font-family:var(--body); color:var(--ink); overflow-x:hidden; overflow-y:auto;
     --sky-a:#eaf6ff; --sky-b:#dceffb; --sky-c:#fff6e8; --glowA:rgba(255,180,61,.22); --glowB:rgba(8,165,181,.20);
     background:
       radial-gradient(1200px 700px at 82% -8%, var(--glowA), transparent 60%),
@@ -65,7 +65,7 @@
   @keyframes sail{to{left:106%}}
   @keyframes bob{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-5px) rotate(5deg)}}
   body.sky-night #sea .wave{filter:brightness(.7)}
-  .app{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh;padding:clamp(10px,1.3vw,20px);padding-bottom:clamp(42px,5.4vh,64px);gap:clamp(9px,1vw,15px)}
+  .app{position:relative;z-index:1;display:flex;flex-direction:column;min-height:100vh;padding:clamp(10px,1.3vw,20px);padding-bottom:clamp(42px,5.4vh,64px);gap:clamp(9px,1vw,15px)}
 
   /* ---------- Top bar ---------- */
   .topbar{display:flex;align-items:center;gap:clamp(12px,1.6vw,26px);flex-wrap:nowrap}
@@ -102,7 +102,7 @@
   /* ---------- Main grid ---------- */
   .main{flex:1;display:grid;grid-template-columns:1.5fr 1fr;gap:clamp(9px,1vw,15px);min-height:0}
   .cams{display:flex;flex-direction:column;gap:clamp(9px,1vw,15px);min-height:0}
-  .stage{position:relative;flex:1;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);background:#0b2233;min-height:0;--pipw:clamp(78px,8vw,120px)}
+  .stage{position:relative;flex:1;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);background:#0b2233;min-height:clamp(300px,42vh,560px);--pipw:clamp(78px,8vw,120px)}
   .stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
   .stage .veil{position:absolute;inset:0;display:grid;place-items:center;background:linear-gradient(180deg,#0b2233,#0e3147);color:#cfe8f2;font-family:var(--display);z-index:1;gap:10px;text-align:center;padding:20px;transition:opacity .4s}
   .stage .veil.hide{opacity:0;pointer-events:none}
@@ -308,7 +308,9 @@
   #cinema.zoomed .cgrab{display:block} #cinema.zoomed .cgrab:active{cursor:grabbing}
   #cinema .ccap,#cinema .cclose,#cinema .czoom{z-index:4}
   #cinema .cribbon{z-index:2}
-  #cinema .czoom{position:absolute;top:16px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:6px;background:rgba(8,40,58,.66);backdrop-filter:blur(8px);border-radius:999px;padding:5px 8px;color:#fff;font-family:var(--display);font-weight:700}
+  #cinema .czoom{position:absolute;bottom:16px;top:auto;left:50%;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:6px;background:rgba(8,40,58,.72);backdrop-filter:blur(8px);border-radius:999px;padding:5px 8px;color:#fff;font-family:var(--display);font-weight:700}
+  #cinema .czoom .closebtn{width:auto;border-radius:999px;padding:0 13px;font-size:13px;height:30px;background:rgba(255,90,70,.92);margin-left:4px}
+  #cinema .cribbon{padding-bottom:58px}
   #cinema .czoom button{border:0;background:rgba(255,255,255,.16);color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:17px;display:grid;place-items:center;line-height:1}
   #cinema .czoom #fvPct{min-width:46px;text-align:center;font-size:13px}
   #cinema .czoom #fvRotate{width:auto;border-radius:999px;padding:0 12px;font-size:12px;height:30px}
@@ -515,14 +517,14 @@
 
 <div id="cinema" aria-hidden="true">
   <div class="ccap"><span class="ldot"></span><span id="cinemaCap">—</span></div>
-  <button class="cclose" id="cinemaClose">Close full view ✕</button>
-  <div class="czoom">
-    <button id="fvOut" aria-label="Zoom out">−</button><span id="fvPct">100%</span><button id="fvIn" aria-label="Zoom in">+</button>
-    <button id="fvReset" aria-label="Reset zoom" title="Reset zoom">⟲</button><button id="fvRotate" title="Cycle cameras">Cycle</button>
-  </div>
   <div class="cmedia" id="cinemaMedia"></div>
   <div class="cgrab" id="cinemaGrab"></div>
   <div class="cribbon"><div class="cclock" id="cinemaClock">--:--</div><div class="cfacts" id="cinemaFacts"></div></div>
+  <div class="czoom">
+    <button id="fvOut" aria-label="Zoom out">−</button><span id="fvPct">100%</span><button id="fvIn" aria-label="Zoom in">+</button>
+    <button id="fvReset" aria-label="Reset zoom" title="Reset zoom">⟲</button><button id="fvRotate" title="Cycle cameras">Cycle</button>
+    <button id="cinemaClose" class="closebtn">Close ✕</button>
+  </div>
 </div>
 
 <div id="radar" aria-hidden="true">
