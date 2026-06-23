@@ -852,11 +852,12 @@ function renderWind(cur){
 }
 function moonInfo(d){ const syn=29.530588853, ref=Date.UTC(2000,0,6,18,14)/864e5;
   let p=((d.getTime()/864e5 - ref)/syn)%1; if(p<0)p+=1;          // 0 = new, 0.5 = full
-  const illum=Math.round((1-Math.cos(2*Math.PI*p))/2*100);
-  let name='New moon';
-  if(p>=0.975||p<0.025)name='New moon'; else if(p<0.235)name='Waxing crescent'; else if(p<0.265)name='First quarter';
-  else if(p<0.475)name='Waxing gibbous'; else if(p<0.525)name='Full moon'; else if(p<0.735)name='Waning gibbous';
-  else if(p<0.765)name='Last quarter'; else name='Waning crescent';
+  const illum=Math.round((1-Math.cos(2*Math.PI*p))/2*100), waxing=p<0.5;
+  let name;
+  if(illum<2)name='New moon'; else if(illum>98)name='Full moon';
+  else if(illum<46)name=waxing?'Waxing crescent':'Waning crescent';
+  else if(illum<=54)name=waxing?'First quarter':'Last quarter';
+  else name=waxing?'Waxing gibbous':'Waning gibbous';
   return {p,illum,name, toFull:((0.5-p+1)%1)*syn };
 }
 function moonGlyph(name){ const D='#2b3656',Lt='#f4e8c4', base=v=>`<circle cx="20" cy="20" r="18" fill="${v}"/>`,
