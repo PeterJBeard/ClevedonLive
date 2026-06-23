@@ -26,17 +26,46 @@
   html,body{height:100%}
   body{
     font-family:var(--body); color:var(--ink); overflow:hidden;
+    --sky-a:#eaf6ff; --sky-b:#dceffb; --sky-c:#fff6e8; --glowA:rgba(255,180,61,.22); --glowB:rgba(8,165,181,.20);
     background:
-      radial-gradient(1200px 700px at 82% -8%, rgba(255,180,61,.22), transparent 60%),
-      radial-gradient(1100px 800px at 8% 120%, rgba(8,165,181,.20), transparent 55%),
-      linear-gradient(170deg, var(--sky-1) 0%, var(--sky-2) 48%, var(--sand) 100%);
+      radial-gradient(1200px 700px at 82% -8%, var(--glowA), transparent 60%),
+      radial-gradient(1100px 800px at 8% 120%, var(--glowB), transparent 55%),
+      linear-gradient(170deg, var(--sky-a) 0%, var(--sky-b) 48%, var(--sky-c) 100%);
     background-attachment:fixed;
   }
-  /* decorative bottom waves */
+  /* sky follows the real sun */
+  body.sky-dawn{ --sky-a:#fde6ee; --sky-b:#ffe9dd; --sky-c:#fff4e6; --glowA:rgba(255,150,120,.30); --glowB:rgba(120,160,220,.18); }
+  body.sky-golden{ --sky-a:#ffe9c4; --sky-b:#ffd9a6; --sky-c:#ffe6cf; --glowA:rgba(255,170,70,.34); --glowB:rgba(255,120,90,.20); }
+  body.sky-dusk{ --sky-a:#e7e0f3; --sky-b:#f3dbe6; --sky-c:#ffe2cf; --glowA:rgba(255,130,110,.26); --glowB:rgba(90,90,160,.22); }
+  body.sky-night{ --sky-a:#16243e; --sky-b:#1f3357; --sky-c:#27406a; --glowA:rgba(120,150,220,.16); --glowB:rgba(30,60,110,.30); }
   body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:34vh;pointer-events:none;z-index:0;
-    background:
-      radial-gradient(120% 100% at 50% 100%, rgba(47,143,224,.10), transparent 70%);}
-  .app{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh;padding:clamp(10px,1.3vw,20px);gap:clamp(9px,1vw,15px)}
+    background:radial-gradient(120% 100% at 50% 100%, rgba(47,143,224,.10), transparent 70%);}
+  /* keep panels readable on any sky */
+  .card,.strip,.live-pill{color:var(--ink)}
+  body.sky-night{color:#cfddf2}
+  body.sky-night .brand h1{color:#f2f7ff}
+  body.sky-night .brand .sub{color:#a9bcda}
+  body.sky-night .clock .d{color:#a9bcda}
+  body.sky-night .footer{color:#93a7c6}
+  body.sky-night .footer a{color:#ccd9ef}
+  body.sky-night .footer .sep{color:#52688a}
+  /* starfield (fades in at dusk/night) */
+  #stars{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0;transition:opacity 2.5s ease}
+  body.sky-night #stars{opacity:.85} body.sky-dusk #stars{opacity:.35}
+  #stars i{position:absolute;border-radius:50%;background:#fff;animation:tw 4s ease-in-out infinite}
+  @keyframes tw{0%,100%{opacity:.18}50%{opacity:.95}}
+  /* sailing motif: drifting waves + a little boat along the bottom */
+  #sea{position:fixed;left:0;right:0;bottom:0;height:clamp(36px,4.8vh,60px);z-index:0;pointer-events:none;overflow:hidden}
+  #sea .wave{position:absolute;left:0;right:0;bottom:0;height:100%;background-repeat:repeat-x;background-position:0 bottom;background-size:480px 100%}
+  #sea .w1{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='60'%3E%3Cpath d='M0 30 C120 14 240 14 240 24 C240 34 360 46 480 30 L480 60 L0 60 Z' fill='%232f8fe0' fill-opacity='0.20'/%3E%3C/svg%3E");animation:drift 22s linear infinite}
+  #sea .w2{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='60'%3E%3Cpath d='M0 36 C120 22 240 50 360 34 C420 26 460 30 480 36 L480 60 L0 60 Z' fill='%2308a5b5' fill-opacity='0.18'/%3E%3C/svg%3E");animation:drift 15s linear infinite reverse}
+  @keyframes drift{to{background-position:-480px bottom}}
+  #sea .boat{position:absolute;bottom:15px;left:-6%;width:30px;height:30px;animation:sail 78s linear infinite, bob 4.5s ease-in-out infinite}
+  #sea .boat svg{width:100%;height:100%;display:block;filter:drop-shadow(0 2px 3px rgba(13,42,63,.25))}
+  @keyframes sail{to{left:106%}}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-5px) rotate(5deg)}}
+  body.sky-night #sea .wave{filter:brightness(.7)}
+  .app{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh;padding:clamp(10px,1.3vw,20px);padding-bottom:clamp(42px,5.4vh,64px);gap:clamp(9px,1vw,15px)}
 
   /* ---------- Top bar ---------- */
   .topbar{display:flex;align-items:center;gap:clamp(12px,1.6vw,26px);flex-wrap:nowrap}
@@ -168,6 +197,8 @@
   .tide-now .lb{font-size:clamp(9px,.8vw,11px);color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em}
   .tide-curve{margin:8px 0 6px;width:100%}
   .tide-curve svg{width:100%;height:clamp(64px,7vh,104px);display:block;overflow:visible}
+  .tide-curve .tline{stroke-dasharray:2600;stroke-dashoffset:2600;animation:tdraw 1.5s .15s ease forwards}
+  @keyframes tdraw{to{stroke-dashoffset:0}}
   .nextrow{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:auto}
   .nt{background:rgba(255,255,255,.7);border:1px solid var(--line);border-radius:13px;padding:9px 12px}
   .nt .k{font-size:clamp(10px,.82vw,12px);color:var(--ink-soft);font-weight:600;display:flex;align-items:center;gap:6px}
@@ -244,6 +275,8 @@
 </style>
 </head>
 <body>
+<div id="stars" aria-hidden="true"></div>
+<div id="sea" aria-hidden="true"><div class="wave w1"></div><div class="wave w2"></div><div class="boat"><svg viewBox="0 0 40 40"><path d="M21 4 L21 28 L34 28 Z" fill="#ff7a59"/><path d="M19 8 L8 28 L19 28 Z" fill="#ffffff" stroke="#0e3147" stroke-width="0.7"/><rect x="20.2" y="4" width="1.5" height="24" fill="#0e3147"/><path d="M5 29 L35 29 L31 35 Q20 39 9 35 Z" fill="#0e7c86"/></svg></div></div>
 <div class="app">
 
   <!-- TOP BAR -->
@@ -597,7 +630,7 @@ async function loadWeather(){
   // ---- current ----
   const cur=d.current, day=cur.is_day===1;
   $('wxIco').innerHTML = wxIcon(cur.weather_code, day);
-  $('wxTemp').innerHTML = Math.round(cur.temperature_2m)+'<sup>°</sup>';
+  countUp($('wxTemp'), Math.round(cur.temperature_2m), '<sup>°</sup>');
   $('wxCond').textContent = wxLabel(cur.weather_code);
   $('wxFeels').textContent = 'Feels like '+Math.round(cur.apparent_temperature)+'°';
   const wd=cur.wind_direction_10m;
@@ -696,6 +729,7 @@ function drawSunArc(){
 }
 function tickSun(){
   if(!sunToday)return;
+  setSky();
   const now=new Date();
   let target, label;
   if(now<sunToday.sunrise){ target=sunToday.sunrise; label='Sunrise in'; }
@@ -708,6 +742,35 @@ function tickSun(){
 }
 function dur(ms){ if(ms<0)ms=0; const m=Math.floor(ms/60000); const h=Math.floor(m/60); const mm=m%60;
   return h>0? h+'h '+pad(mm)+'m' : mm+'m '+pad(Math.floor((ms%60000)/1000))+'s'; }
+
+/* =========================================================
+   PERSONALITY — greeting, sky-by-sun, starfield, count-up
+   ========================================================= */
+function greet(h){ return h<12?'Good morning':h<17?'Good afternoon':h<21?'Good evening':'Good night'; }
+function setSky(){            // tint the whole page to match the real time of day
+  if(!sunToday) return;
+  const now=+new Date(), sr=+sunToday.sunrise, ss=+sunToday.sunset, M=60000;
+  let cls='sky-day';
+  if(now < sr-40*M || now > ss+55*M) cls='sky-night';
+  else if(now < sr+45*M) cls='sky-dawn';
+  else if(now >= ss) cls='sky-dusk';
+  else if(now > ss-70*M) cls='sky-golden';
+  const b=document.body.classList;
+  ['sky-dawn','sky-day','sky-golden','sky-dusk','sky-night'].forEach(c=>b.toggle(c, c===cls));
+}
+function genStars(n){        // scatter faint twinkling stars (shown at dusk/night)
+  const s=$('stars'); if(!s||s.childElementCount) return; let h='';
+  for(let i=0;i<n;i++){ const x=(Math.random()*100).toFixed(1), y=(Math.random()*72).toFixed(1),
+    z=Math.random()<.22?3:2, d=(Math.random()*4).toFixed(1);
+    h+=`<i style="left:${x}%;top:${y}%;width:${z}px;height:${z}px;animation-delay:${d}s"></i>`; }
+  s.innerHTML=h;
+}
+function countUp(el,to,suffix){   // animate a number gently to its new value
+  if(!el)return; const from=(typeof el._v==='number')?el._v:Math.max(0,to-6), t0=performance.now(), D=700;
+  function step(t){ const k=Math.min(1,(t-t0)/D); const v=Math.round(from+(to-from)*(1-Math.pow(1-k,3)));
+    el.innerHTML=v+suffix; if(k<1)requestAnimationFrame(step); else el._v=to; }
+  requestAnimationFrame(step);
+}
 
 /* =========================================================
    SEA TEMPERATURE (Open-Meteo marine)
@@ -879,7 +942,7 @@ function drawTideCurve(ex,latest){
   $('tideCurve').innerHTML=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
     <defs><linearGradient id="tg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="rgba(47,143,224,.32)"/><stop offset="1" stop-color="rgba(47,143,224,.02)"/></linearGradient></defs>
     <path d="${area}" fill="url(#tg)"/>
-    <path d="${path}" fill="none" stroke="#2f8fe0" stroke-width="2.4" stroke-linejoin="round"/>
+    <path class="tline" d="${path}" fill="none" stroke="#2f8fe0" stroke-width="2.4" stroke-linejoin="round"/>
     ${marks}${nowMark}
   </svg>`;
 }
@@ -890,7 +953,7 @@ function drawTideCurve(ex,latest){
 function tickClock(){
   const n=new Date();
   $('clockT').innerHTML=pad(n.getHours())+':'+pad(n.getMinutes())+'<span class="sec">:'+pad(n.getSeconds())+'</span>';
-  $('clockD').textContent=n.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+  $('clockD').textContent=greet(n.getHours())+' · '+n.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
 }
 function tickLive(){
   const last=Math.max(state.lastOK.weather,state.lastOK.tide);
@@ -935,6 +998,7 @@ function init(){
   document.querySelectorAll('.locsel button').forEach(b=>b.classList.toggle('active',b.dataset.loc===locKey));
   applyLocationChrome();
   buildTiles();
+  genStars(46);
   try{ if(localStorage.getItem('clv_cycle')==='1') startCycle(); }catch(e){}
   tickClock();
   refreshAll(false);
